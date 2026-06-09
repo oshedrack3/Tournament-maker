@@ -1,0 +1,889 @@
+========================================================================== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+  background-color: #0d1117;
+  color: #c9d1d9;
+  padding-bottom: 70px; /* Space for fixed bottom navigation */
+}
+
+/* ==========================================================================
+   LAYOUT CONTAINERS
+   ========================================================================== */
+#app {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 15px;
+}
+
+main {
+  width: 100%;
+}
+
+/* Header Styles */
+.app-header {
+  padding: 15px 0;
+  border-bottom: 1px solid #21262d;
+  margin-bottom: 20px;
+}
+
+.app-header h1 {
+  font-size: 1.8rem;
+  color: #f0f6fc;
+  font-weight: 700;
+}
+
+/* Section Page Titles */
+h2 {
+  font-size: 1.4rem;
+  color: #f0f6fc;
+  margin: 15px 0;
+}
+
+h3 {
+  font-size: 1.1rem;
+  color: #f0f6fc;
+  margin-bottom: 12px;
+}
+
+/* ==========================================================================
+   COMPONENTS: LEAGUE TABLE
+   ========================================================================== */
+.==========================================================================
+   COMPONENTS: FORMS & INPUT CONTROLS
+   ========================================================================== */
+.add-team-box, .score-box, .create-tournament {
+  background-color: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+input[type="text"],
+input[type="number"],
+select {
+  width: 100%;
+  background-color: #0d1117;
+  border: 1px solid #30363d;
+  color: #f0f6fc;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  margin-bottom: 12px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+input:focus, select:focus {
+  border-color: #58a6ff;
+}
+
+/* Score Box specific layout adjustment */
+.score-box select {
+  width: 48%;
+  display: inline-block;
+}
+.score-box select:first-of-type {
+  margin-right: 4%;
+}
+.score-box input[type="number"] {
+  width: 48%;
+  display: inline-block;
+}
+.score-box input[type="number"]:first-of-type {
+  margin-right: 4%;
+}
+
+/* BUTTONS */
+button {
+  background-color: #21262d;
+  color: #c9d1d9;
+  border: 1px solid #30363d;
+  padding: 10px 16px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-block;
+  width: 100%; /* Default block action buttons to full-width */
+  text-align: center;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+button:hover {
+  background-color: #30363d;
+  border-color: #8b949e;
+}
+
+/* Primary Action Buttons */
+.add-team-box button, .score-box button, .create-tournament button, #fixturePage button {
+  background-color: #238636;
+  color: #ffffff;
+  border: 1px solid #2ea44f;
+}
+.add-team-box button:hover, .score-box button:hover, .create-tournament button:hover, #fixturePage button:hover {
+  background-color: #2ea44f;
+}
+
+/* Small Utility Buttons */
+.btn-back {
+  width: auto;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  background-color: transparent;
+  border: none;
+  color: #58a6ff;
+  text-align: left;
+  margin-bottom: 10px;
+}
+.btn-back:hover {
+  background-color: transparent;
+  text-decoration: underline;
+}
+
+/* ==========================================================================
+   OTHER VIEWS (Short View, Form View, Fixtures List)
+   ========================================================================== */
+/* Short rows & form lists */
+.short-row, .form-row, .fixture-row, .tournament-card, #teamList div {
+  background-color: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tournament-card h3 { margin-bottom: 0; }
+.tournament-card button, #teamList div button { width: auto; padding: 6px 12px; }
+
+/* Match Fixtures row text tweaks */
+.fixture-row span:first-child {
+  font-weight: 500;
+}
+.fixture-row span:last-child {
+  color: #8b949e;
+  background: #0d1117;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+/* Form Circles formatting */
+.form-row span {
+  letter-spacing: 4px;
+  font-weight: bold;
+}
+
+/* ==========================================================================
+   FIXED BOTTOM NAVIGATION
+   ========================================================================== */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #161b22;
+  border-top: 1px solid #30363d;
+  display: flex;
+  justify-content: space-around;
+  padding: 8px 0;
+  z-index: 1000;
+}
+
+.bottom-nav button {
+  background: transparent;
+  border: none;
+  color: #8b949e;
+  font-size: 0.8rem;
+  padding: 6px 0;
+  width: 20%; /* Even distribution */
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.bottom-nav button:hover {
+  background: transparent;
+  color: #f0f6fc;
+}
+
+.bottom-nav button:focus, 
+.bottom-nav button:active {
+  color: #58a6ff;
+}
+
+
+
+
+#fixturePage {
+  padding: 16px;
+  background: #0f0f0f;
+  color: #fff;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+#fixturePage h2 {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 16px 0;
+}
+
+/* Top button row */
+
+.score-box {
+  background: #1a1a1a;
+  padding: 16px;
+  border-radius: 14px;
+  margin-bottom: 20px;
+}
+
+.score-box h3 {
+  margin: 0 0 12px 0;
+  font-size: 18px;
+}
+
+.score-box select,
+.score-box input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 10px;
+  background: #2a2a2a;
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+.score-box input {
+  width: 48%;
+  display: inline-block;
+}
+
+.score-box input:nth-child(4) {
+  margin-right: 4%;
+}
+
+.score-box button {
+  width: 100%;
+  padding: 14px;
+  background: #2ecc71;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+/* Fixture cards */
+#fixtureList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fixture-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #1a1a1a;
+  padding: 16px;
+  border-radius: 12px;
+  font-size: 16px;
+}
+
+.fixture-row span:last-child {
+  background: #2a2a2a;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  min-width: 70px;
+  text-align: center;
+}
+
+
+
+.fixture-header {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.fixture-header button {
+  flex: 1;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Green for Generate */
+.fixture-header .btn-fixture {
+  background: #2ecc71;
+  color: #fff;
+}
+
+/* Dark for Prev/Next */
+.fixture-header #btn-previous,
+.fixture-header #btn-next {
+  background: #2a2a2a;
+  color: #fff;
+}
+
+
+.fixture-row.played .score-badge {
+  background: #2ecc71;
+  color: #000;
+}
+.fixture-row.not-played .score-badge {
+  background: #2a2a2a;
+  color: #888;
+}
+
+
+
+.score-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.score-row input {
+  width: 60px;
+  text-align: center;
+}
+
+
+
+
+/* Normal mode - keeps your sticky columns */
+
+/* Screenshot mode - forces everything to fit */
+.table-wrapper.screenshot-mode {
+  overflow-x: hidden;
+}
+
+.table-wrapper.screenshot-mode table {
+  min-width: 0;
+  table-layout: fixed;
+  font-size: 0.7rem;
+}
+
+.table-wrapper.screenshot-mode th,
+.table-wrapper.screenshot-mode td {
+  padding: 6px 4px;
+}
+
+/* Truncate long team names with ... */
+.table-wrapper.screenshot-mode td:nth-child(2) {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Disable sticky in screenshot mode */
+.table-wrapper.screenshot-mode th:first-child,
+.table-wrapper.screenshot-mode td:first-child,
+.table-wrapper.screenshot-mode th:nth-child(2),
+.table-wrapper.screenshot-mode td:nth-child(2) {
+  position: static;
+}
+
+
+
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid #2d333b;
+  background: linear-gradient(180deg, #161b22 0%, #0d1117 100%);
+  margin-bottom: 25px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.9rem;
+  min-width: 600px;
+}
+
+/* Header */
+thead th {
+  background: #1f242c;
+  color: #8b949e;
+  font-weight: 600;
+  padding: 14px 12px;
+  border-bottom: 1px solid #30363d;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.8px;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
+
+/* Cells */
+td {
+  padding: 14px 12px;
+  border-bottom: 1px solid #21262d;
+  color: #c9d1d9;
+  transition: background 0.15s ease;
+}
+
+tr:hover td {
+  background-color: rgba(88, 166, 255, 0.08);
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+/* Column styling */
+td:first-child, th:first-child { 
+  text-align: center; 
+  width: 48px; 
+  color: #8b949e;
+  font-weight: 600;
+}
+
+td:nth-child(2), th:nth-child(2) { 
+  font-weight: 600; 
+  color: #f0f6fc; 
+  text-align: left;
+  z-index: 15;
+} 
+
+td:not(:nth-child(2)), th:not(:nth-child(2)) { 
+  text-align: center; 
+}
+
+/* PTS column highlight */
+td:last-child { 
+  font-weight: 700; 
+  color: #58a6ff;
+  font-size: 0.95rem;
+}
+
+/* Color code GD */
+td:nth-child(9) {
+  font-weight: 600;
+}
+td:nth-child(9):contains("+") {
+  color: #3fb950;
+}
+td:nth-child(9):contains("-") {
+  color: #f85149;
+}
+
+/* Sticky # and TEAM columns */
+th:first-child, td:first-child,
+th:nth-child(2), td:nth-child(2) {
+  position: sticky;
+  background: #161b22;
+  z-index: 2;
+}
+th:first-child, td:first-child { left: 0; }
+th:nth-child(2), td:nth-child(2) { left: 48px; }
+th:first-child, th:nth-child(2) { background: #1f242c; }
+
+/* Zebra striping */
+tbody tr:nth-child(even) td {
+  background-color: rgba(255,255,255,0.02);
+}
+tbody tr:nth-child(even):hover td {
+  background-color: rgba(88, 166, 255, 0.08);
+
+}
+
+
+/* Sticky # and TEAM columns - make them solid */
+th:first-child, td:first-child,
+th:nth-child(2), td:nth-child(2) {
+  position: sticky;
+  z-index: 10; /* higher than normal cells */
+  background: #161b22; /* solid, no alpha */
+}
+
+/* Position */
+th:first-child, td:first-child { left: 0; }
+th:nth-child(2), td:nth-child(2) { left: 48px; }
+
+/* Sticky headers need header color */
+th:first-child, th:nth-child(2) { 
+  background: #1f242c; 
+}
+
+/* Zebra striping - use solid colors, not rgba */
+tbody tr:nth-child(even) td:first-child,
+tbody tr:nth-child(even) td:nth-child(2) {
+  background-color: #191f28; /* solid, not rgba(255,255,255,0.02) */
+}
+
+/* Hover state for sticky columns too */
+tr:hover td:first-child,
+tr:hover td:nth-child(2) {
+  background-color: #1f242c; /* solid color on hover */
+}
+
+
+
+
+
+.score-badge {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.score-badge.played {
+  background: #1f3320;
+  color: #3fb950; /* your current green */
+}
+
+.score-badge.not-played {
+  background: #3d1f1f;
+  color: #f85149; /* red */
+}
+
+
+
+
+/* Isolate short view table from the main table styles */
+#shortTableContainer .short-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  min-width: 0 !important; /* override global table min-width */
+  table-layout: fixed;
+}
+
+#shortTableContainer .short-table th,
+#shortTableContainer .short-table td {
+  padding: 8px 10px;
+  text-align: center;
+  border-bottom: 1px solid #333;
+}
+
+#shortTableContainer .short-table th {
+  background: #2a2a2a;
+  font-weight: 600;
+  position: static !important; /* override sticky */
+}
+
+#shortTableContainer .short-table tbody tr {
+  background: #1e1e1e;
+}
+
+#shortTableContainer .short-table tbody tr:hover td {
+  background-color: rgba(88, 166, 255, 0.08);
+}
+
+/* Column alignment */
+#shortTableContainer .short-table td:first-child,
+#shortTableContainer .short-table th:first-child {
+  text-align: left !important;
+  width: 30px;
+}
+
+#shortTableContainer .short-table td:nth-child(2),
+#shortTableContainer .short-table th:nth-child(2) {
+  text-align: left !important;
+  width: auto;
+}
+
+#shortTableContainer .short-table td:nth-child(3),
+#shortTableContainer .short-table td:nth-child(4),
+#shortTableContainer .short-table td:nth-child(5) {
+  text-align: center !important;
+  width: 45px;
+}
+
+/* Remove the global table border radius/background for this one */
+#shortTableContainer {
+  background: none;
+  border: none;
+  margin-bottom: 20px;
+}
+
+
+
+
+.btn-tablePage {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+  overflow-x: auto; /* lets you scroll if they don't fit */
+}
+
+.btn-tablePage button {
+  flex: 1; /* makes all buttons equal width */
+  width: auto; /* override global width: 100% */
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  white-space: nowrap; /* prevents text wrapping */
+  margin-bottom: 0; /* override global margin */
+}
+
+/* Keep the camera button green like you had */
+.btn-tablePage button:nth-child(3) {
+  background: #238636;
+  flex: 0 0 50px; /* fixed width for icon button */
+}
+
+
+
+#btn-backHome,
+#btn-backTeamPage,
+#btn-backFormPage {
+  width: auto !important;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  background: transparent;
+  border: none;
+  color: #58a6ff;
+  text-align: left;
+  margin-bottom: 10px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.2s;
+}
+
+/* Hover state for all 3 */
+#btn-backHome:hover,
+#btn-backTeamPage:hover,
+#btn-backFormPage:hover {
+  background: transparent;
+  color: #79c0ff;
+  text-decoration: underline;
+}
+
+/* Active state for all 3 */
+#btn-backHome:active,
+#btn-backTeamPage:active,
+#btn-backFormPage:active {
+  color: #1f6feb;
+}
+
+
+
+/* ===== LEAGUE PAGE ===== */
+#leaguePage .btn-tablePage {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  overflow-x: auto;
+}
+
+#leaguePage .btn-tablePage button {
+  flex: 1;
+  width: auto;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  margin-bottom: 0;
+}
+
+#leaguePage .btn-tablePage button:nth-child(3) {
+  background: #238636;
+  flex: 0 0 50px;
+}
+
+#leaguePage .table-wrapper {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid #2d333b;
+  background: #161b22;
+}
+
+#leaguePage table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.9rem;
+  min-width: 600px;
+}
+
+/* ===== TEAM PAGE ===== */
+#teamPage #teamList div {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#teamPage button {
+  width: auto;
+  padding: 6px 12px;
+}
+
+/* ===== FORM PAGE ===== */
+#formPage .form-row {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#formPage .form-row span {
+  letter-spacing: 4px;
+  font-weight: bold;
+}
+
+/* ===== SHORT VIEW TABLE ===== */
+#shortTableContainer .short-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  min-width: 0 !important;
+}
+
+#shortTableContainer .short-table th,
+#shortTableContainer .short-table td {
+  padding: 8px 10px;
+  text-align: center;
+  border-bottom: 1px solid #333;
+}
+
+#shortTableContainer .short-table td:first-child,
+#shortTableContainer .short-table td:nth-child(2) {
+  text-align: left;
+}
+
+
+
+.match-details {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Or 'center' depending on your layout */
+    gap: 10px;
+}
+
+
+
+
+
+
+/* The container for a single match row */
+.fixture-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 15px;
+    width: 100%; /* Or whatever width your cards are using */
+    box-sizing: border-box;
+}
+
+/* Base styles for both team names */
+.team {
+    flex: 1; /* This forces both teams to take up equal width */
+    font-size: 14px;
+    color: #b3b3b3;
+}
+
+/* Right-align the home team so it pushes right up against the badge */
+.home-team {
+    text-align: right;
+    margin-right: 15px; /* Creates space between text and badge */
+}
+
+/* Left-align the away team so it starts right after the badge */
+.away-team {
+    text-align: left;
+    margin-left: 15px; /* Creates space between badge and text */
+}
+
+/* Style for your badge */
+.score-badge {
+    display: inline-block;
+    min-width: 60px; /* Ensures 'VS' and '2 - 3' keep the badge the same width */
+    text-align: center;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-weight: bold;
+}
+
+/* Optional styling based on your screenshot */
+.score-badge.played {
+    background-color: #2ecc71; /* Green badge like your Barcelona match */
+    color: #000;
+}
+
+.score-badge.not-played {
+    background-color: transparent; /* Or a subtle dark gray if you prefer */
+    color: #666;
+}
+
+
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.modal-box {
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  max-width: 300px;
+  text-align: center;
+}
+
+.modal-box p {
+  margin: 0 0 15px 0;
+  font-size: 16px;
+}
+
+.modal-box button {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 8px;
+  background: #007bff;
+  color: #fff;
+  cursor: pointer;
+}
+
+
+
+#modalInput {
+  width: 80%;
+  padding: 8px;
+  margin-top: 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  text-align: center;
+}
