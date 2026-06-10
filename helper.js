@@ -35,6 +35,23 @@ function closeInputModal() {
 }
 
 
+function showActionModal(message, type = "") {
+  const modal = document.getElementById("actionModal");
+  
+  modal.textContent = message;
+  modal.className = "action-modal";
+  
+  if (type) modal.classList.add(type);
+  
+  modal.classList.add("show");
+  
+  setTimeout(() => modal.classList.remove("show"), 1200);
+}
+
+
+
+
+
 let confirmCallback = null;
 
 function showConfirmModal(message, callback) {
@@ -54,10 +71,7 @@ function confirmYes() {
 
 function confirmNo() {
   document.getElementById("confirmModal").style.display = "none";
-  
-  if (confirmCallback) {
-    confirmCallback(false);
-  }
+  confirmCallback = null; // Just clear it out and do nothing else!
 }
 
 
@@ -92,7 +106,7 @@ function proceedToInput() {
     
     generateFixtures(rounds);
     goToFixturePage();
-    showAlert("Fixtures generated!");
+ 
   });
 }
 
@@ -140,45 +154,28 @@ function deleteTournament(id) {
     return;
   }
   
+  
   showConfirmModal(
     `Delete "${tournament.name}" permanently? This cannot be undone.`,
     () => {
       removeTournament(id);
-     showAlert("Tournament deleted.");
+    showActionModal("❌ Tournament Deleted", "delete");
       renderTournamentList(); 
+      
     }
   );
 }
 
 
 
+function showCreateTournament() {
+  document.getElementById("createTour").style.display = "block";
+}
 
-function tournamentCreator() {
-  const input = document.getElementById("tournamentNameInput");
-  const formatInput = document.getElementById("tournamentFormatInput");
-  
-  const name = input.value.trim();
-  
-  if (!name) {
-    showModalAlert("Enter tournament name");
-    return;
-  }
-  
-  let tournaments = getAllTournaments(); // use the same function name everywhere
-  
-  const newTournament = {
-    id: Date.now(),
-    name: name,
-    format: formatInput.value,
-    teams: [],
-    matches: [],
-    table: []
-  };
-  
-  tournaments.push(newTournament);
-  localStorage.setItem("tournaments", JSON.stringify(tournaments));
-  
- showAlert("Tournament created!");
-  input.value = ""; // clear input
-  renderTournamentList(); // refresh UI
+function hideCreateTournament() {
+  document.getElementById("createTour").style.display = "none";
+}
+
+function openCreateTournament() {
+  document.getElementById("createTour").style.display = "block";
 }

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>eFootball League</title>
   <link rel="stylesheet" href="styles.css" />
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -12,23 +12,36 @@
 
 <div id="app">
   
-  <!-- HEADER -->
-      <h1 class="appHeader"> EfootBall Tournaments</h1>
-<section id="listOfTournamentPage">
-      <div class="create-tournament" style="display: flex; gap: 10px; flex-direction: column; max-width: 300px;">
-        <h2> Create New Tournament
-        </h2>
-        <input type="text" id="tournamentNameInput" placeholder="Tournament name" />
-        
-        <select id="tournamentFormatInput">
-          <option value="league">Round Robin (League)</option>
-          <option value="knockout">Knockout (Bracket)</option>
-        </select>
-        
-        <button onclick="tournamentCreator()">Create</button>
-      </div>
+<section id="listOfTournamentPage" class="page">
+  
+    <!-- HEADER -->
+  <div class="header">
+    <h1 class="appHeader"> Tournamrnt Maker</h1>
+    <p> Every Tournament You want, We make it!!</p>
+    
+  </div>
+  
+  
+ <button class="createNewTour" onclick="openCreateTournament()">Create  Tournament</button> 
+<div id="createTour" class="modal-overlay" style="display:none">
+  <div class="tourCreatorSection">
+    <div class="create-tournament">
+      <h2>Create New Tournament</h2>
       
+      <input type="text" id="tournamentNameInput" placeholder="Tournament name" />
+      
+      <select id="tournamentFormatInput">
+        <option value="league">Round Robin (League)</option>
+        <option value="knockout">Knockout</option>
+      </select>
+      
+      <button onclick="tournamentCreator()">Create</button>
+      <button onclick="hideCreateTournament()">Close</button>
+    </div>
+  </div>
+</div>      <div class="tourListWrap">
       <div id="tournamentList"></div>
+      </div>
     </section>
     
     
@@ -44,33 +57,36 @@
       <nav class="bottom-nav">
         <button onclick="goToTablePage()">League</button>
         <button onclick="goToFixturePage()">Fixtures</button>
-        <button onclick="goToStatPage()">Stats</button>
       </nav>
       
-      <button id="btn-backHome" onclick="goToListOfTournamentPage()">
-        ← Home
-      </button>
-      
-      <h2 id="tournamentTitle">Tournament Name</h2>
-      
-      <!-- TABLE PAGE -->
+  
+       <!-- TABLE PAGE -->
       
       <section class="page" id="tablePage" style="display:none;">
-        <h2 id="tableTitle">League Table</h2>
+         <button class="btn-back" onclick="goToListOfTournamentPage()">
+   🔙
+ </button>
+      
+        <div class="topSection">
+         
+        <h2 id="tournamentTitle">Tournament Name</h2>
+        </div>
         
         <div class="btn-tablePage">
-          <button onclick="toggleScreenshotMode()" style="margin-bottom: 10px; padding: 8px 12px; background: #2a2a2a; border: none; border-radius: 6px; color: #fff;">
+          <button onclick="toggleScreenshotMode()">
             FullView
           </button>
-          <button onclick="goToShortViewPage()">ShortView</button>
-          <button onclick="shareTable()" style="padding: 8px 12px; background: #238636; border: none; border-radius: 6px; color: #fff;"> 📷
-            
-          </button>
+            <button onclick="shareTable()"> 📷
+    
+  </button>
+   
           
-          <button onclick="goToFormViewPage()">Form</button>
-          <button onclick="goToTeamListPage()"> Teams</button>
-          
-        </div>
+       
+          <button onclick="goToTeamListPage()"> Add Teams</button>
+         
+      </div>     
+        
+        
         <div class="table-wrapper">
           <table id="leagueTable">
             <thead>
@@ -101,27 +117,50 @@
       
       <section class="page" id="fixturePage" style="display:none;">
         
-        <div class="fixture-header">
-          <button class="btn-fixture" onclick="handleGenerateFixtures()">Generate Fixtures</button>
-          <button id="btn-previous" onclick="prevRound()">⬅ Prev</button>
-          <button id="btn-next" onclick="nextRound()">Next ➡</button>
-          <button id="btn-shareFixtures" onclick="shareFixtures()">📷</button>
+     
+        <div class="topSection">
+         <h2> Fixtures and Match Results </h2>
         </div>
-        
+      
+          <div class="btn-tablePage">
+          <button  onclick="handleGenerateFixtures()">Create </button>
+          <button onclick="prevRound()">⬅ Prev</button>
+          <button onclick="nextRound()">Next ➡</button>
+          <button  onclick="shareFixtures()">📷</button>
+        </div>
+      
+       
+     
+      
+      <div class="content">
         <div id="fixtureScreenshotArea" style="background: #0d1117; padding: 10px; border-radius: 8px;">
-          <h2 id="roundLabel">Fixtures</h2>
+          
+   
+        <h2 id="roundLabel">Fixtures
+        </h2>
+    
+          
           <div id="fixtureList"></div>
         </div>
-        
         <div class="score-box">
-          <h3>Record Match Result</h3>
-          <select id="homeTeam"></select>
-          <select id="awayTeam"></select>
-          <input id="homeGoals" type="number" placeholder="Home Goals" />
-          <input id="awayGoals" type="number" placeholder="Away Goals" />
-          <button onclick="handleSetScore()">Save Score</button>
-          <button onclick="handleResetMatch()">Reset Score</button>
-        </div>
+  <h3>Record Match Result</h3>
+  
+  <div class="row">
+    <select id="homeTeam"></select>
+    <input id="homeGoals" type="number" placeholder="Goals" />
+  </div>
+  
+  <div class="row">
+    <select id="awayTeam"></select>
+    <input id="awayGoals" type="number" placeholder="Goals" />
+  </div>
+  
+  <div class="row btn-row">
+    <button class="btn-save" onclick="handleSetScore()">Save Score</button>
+    <button class="btn-delete" onclick="handleResetMatch()">Reset Score</button>
+  </div>
+</div>
+          </div>
         
       </section>
       
@@ -142,47 +181,23 @@
 
 
 
-<div id="teamListPage" style="display:none">
-  <button id="btn-backTeamPage" onclick="goToTablePage()"> Table </button>
-  <h1> Registered Team </h1>
+<div class="page" id="teamListPage" style="display:none">
+  <button class="btn-back" onclick="goToTablePage()"> 🔙 </button>
+  <div class="topSection">
+  <h1> Register Team </h1>
+  </div>
+  
   <div id="teamList"></div>
   
   <div class="add-team-box">
-    <h3>Add Team</h3>
     
     <input id="teamNameInput" type="text" placeholder="Enter team name" />
     
-    <button onclick="handleAddTeam()">Add Team</button>
+    <button onclick="handleAddTeam()"> Register Team</button>
   </div>
   
 </div>
 
-
-
-<!-- SHORT VIEW -->
-
-<section class="page" id="shortViewPage" style="display:none;">
-  <h2>Short View</h2>
-  <button id="btn-backFormPage" onclick="goToTablePage()"> Table </button>
-  
-  <div id="shortTableContainer">
-    <table class="short-table">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Team</th>
-          <th>P</th>
-          <th>GD</th>
-          <th>PT</th>
-        </tr>
-      </thead>
-      <tbody id="shortTableBody">
-        
-      </tbody>
-    </table>
-  </div>
-  
-</section>
 
 
 <!-- FORM -->
@@ -230,6 +245,8 @@
   </div>
 </div>
 
+
+<div id="actionModal" class="action-modal"></div>
 
 
 
