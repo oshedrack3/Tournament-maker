@@ -1,46 +1,45 @@
+let currentTournament = null;
 
 
-
-function renderFixtures() {
-  const tournament = getCurrentTournament();
-  if (!tournament || !tournament.matches) return;
-  
-  const container = document.getElementById("fixtureList");
-  container.innerHTML = "";
-  
-  const searchQuery = document
-    .getElementById("fixtureSearchInput")
-    ?.value
-    ?.toLowerCase() || "";
-  
-  const currentRound = getCurrentRound();
-  const maxRound = Math.max(
-    ...tournament.matches.map(m => m.round || 1),
-    1
-  );
-  
-  const roundLabel = document.getElementById("roundLabel");
-  roundLabel.innerText =
-    maxRound === 1 ? "" : `Round ${currentRound}/${maxRound}`;
-  
-  
-  let roundMatches = tournament.matches;
-  
-  
-  if (!searchQuery && maxRound !== 1) {
-    roundMatches = roundMatches.filter(
-      m => (m.round || 1) === currentRound
+async function renderFixtures() {
+    const tournament = await getCurrentTournament();
+    if (!tournament || !tournament.matches) return;
+    
+    const container = document.getElementById("fixtureList");
+    if (!container) return;
+    container.innerHTML = "";
+    
+    const searchQuery = document
+      .getElementById("fixtureSearchInput")
+      ?.value
+      ?.toLowerCase() || "";
+    
+    const currentRound = await getCurrentRound(); // <- add await
+    const maxRound = Math.max(
+      ...tournament.matches.map(m => m.round || 1),
+      1
     );
+    
+    const roundLabel = document.getElementById("roundLabel");
+    if (roundLabel) {
+      roundLabel.innerText =
+        maxRound === 1 ? "" : `Round ${currentRound}/${maxRound}`;
+    }
+    
+    let roundMatches = tournament.matches;
+    
+    if (!searchQuery && maxRound !== 1) {
+      roundMatches = roundMatches.filter(
+        m => (m.round || 1) === currentRound
+      );;
   }
   
- 
   if (searchQuery) {
     roundMatches = roundMatches.filter(match =>
       match.home.toLowerCase().includes(searchQuery) ||
       match.away.toLowerCase().includes(searchQuery)
     );
   }
-  
   
   if (roundMatches.length === 0) {
     container.innerHTML = searchQuery ?
@@ -49,7 +48,6 @@ function renderFixtures() {
     return;
   }
   
- 
   roundMatches.forEach(match => {
     const div = document.createElement("div");
     
@@ -58,47 +56,48 @@ function renderFixtures() {
     const homeLogo = tournament.teamLogos?.[match.home];
     const awayLogo = tournament.teamLogos?.[match.away];
     
-div.innerHTML = `
- 
-    <div class="fixture-label">League</div>
-    
-    <div class="fixture-row-content">
-    <div class="fixture-teams-stack">
-      <div class="team-row-item">
-        ${homeLogo 
-          ? `<img class="fixture-team-logo" src="${homeLogo}">` 
-          : `<div class="fixture-team-logo-placeholder">?</div>`
-        }
-        <span class="fixture-team-name">${match.home}</span>
-      </div>
+    div.innerHTML = `
+      <div class="fixture-label">League</div>
       
-      <div class="team-row-item">
-        ${awayLogo 
-          ? `<img class="fixture-team-logo" src="${awayLogo}">` 
-          : `<div class="fixture-team-logo-placeholder">?</div>`
-        }
-        <span class="fixture-team-name">${match.away}</span>
-      </div>
-    </div>
-
-    <div class="fixture-status-pane">
-      ${match.played
-        ? `
-          <div class="score-stack">
-            <span class="score-badge played">${match.homeGoals}</span>
-            <span class="score-badge played">${match.awayGoals}</span>
+      <div class="fixture-row-content">
+        <div class="fixture-teams-stack">
+          <div class="team-row-item">
+            ${homeLogo 
+              ? `<img class="fixture-team-logo" src="${homeLogo}">` 
+              : `<div class="fixture-team-logo-placeholder">?</div>`
+            }
+            <span class="fixture-team-name">${match.home}</span>
           </div>
-        `
-        : `<span class="vs-text-alt">VS</span>`
+          
+          <div class="team-row-item">
+            ${awayLogo 
+              ? `<img class="fixture-team-logo" src="${awayLogo}">` 
+              : `<div class="fixture-team-logo-placeholder">?</div>`
+            }
+            <span class="fixture-team-name">${match.away}</span>
+          </div>
+        </div>
+
+        <div class="fixture-status-pane">
+          ${match.played
+            ? `
+              <div class="score-stack">
+                <span class="score-badge played">${match.homeGoals}</span>
+                <span class="score-badge played">${match.awayGoals}</span>
+              </div>
+            `
+            : `<span class="vs-text-alt">VS</span>`
+          }
+        </div>
+      </div>
+    `;
+
+    div.style.cursor = "pointer";
+    div.addEventListener("click", () => {
+      if (typeof openLeagueRecorder === "function") {
+        openLeagueRecorder(match);
       }
-    </div>
-</div>
-  
-`;
-
-
-div.style.cursor = "pointer";
-    div.addEventListener("click", () => openLeagueRecorder(match));
+    });
     
     container.appendChild(div);
   });
@@ -106,29 +105,75 @@ div.style.cursor = "pointer";
 
 
 
-
-function nextRound() {
-  const tournament = getCurrentTournament();
-  if (!tournament || !tournament.matches.length) return;
-
-  const maxRound = Math.max(...tournament.matches.map(m => m.round || 1));
-  let currentRound = getCurrentRound();
-
+async function nextRound() {
+  console.log("[nextRound] Called");
+  
+  const tournament = await getCurrentTournament(); // <- add await
+  console.log("[nextRound] Current tournament:", tournament);
+  
+  if (!tournament) {
+    console.error("[nextRound] No tournament loaded. Call loadFromFirebase first.");
+    return;
+  }
+  
+  if (!tournament.matches || !tournament.matches.length) {
+    console.error("[nextRound] Tournament has no matches:", tournament);
+    return;
+  }
+  
+  const rounds = tournament.matches.map(m => m.round || 1);
+  const maxRound = Math.max(...rounds);
+  let currentRound = tournament.currentRound || 1;
+  
+  console.log(`[nextRound] currentRound=${currentRound}, maxRound=${maxRound}`);
+  
   if (currentRound < maxRound) {
-    setCurrentRound(currentRound + 1);
-    renderFixtures();
+    tournament.currentRound = currentRound + 1;
+    console.log("[nextRound] Setting round to:", tournament.currentRound);
+    
+    await updateTournament(tournament);
+    await renderFixtures();
+    console.log("[nextRound] Done");
+  } else {
+    console.log("[nextRound] Already at max round");
   }
 }
 
-
-function prevRound() {
-  let currentRound = getCurrentRound();
-
+async function prevRound() {
+  console.log("[prevRound] Called");
+  
+  const tournament = await getCurrentTournament(); // <- add await
+  console.log("[prevRound] Current tournament:", tournament);
+  
+  if (!tournament) {
+    console.error("[prevRound] No tournament loaded.");
+    return;
+  }
+  
+  if (!tournament.matches || !tournament.matches.length) {
+    console.error("[prevRound] Tournament has no matches.");
+    return;
+  }
+  
+  let currentRound = tournament.currentRound || 1;
+  console.log(`[prevRound] currentRound=${currentRound}`);
+  
   if (currentRound > 1) {
-    setCurrentRound(currentRound - 1);
-    renderFixtures();
+    tournament.currentRound = currentRound - 1;
+    console.log("[prevRound] Setting round to:", tournament.currentRound);
+    
+    await updateTournament(tournament);
+    await renderFixtures();
+    console.log("[prevRound] Done");
+  } else {
+    console.log("[prevRound] Already at round 1");
   }
 }
+
+
+
+  
+
 
 
 
@@ -142,7 +187,7 @@ function tournamentCreator() {
     return;
   }
   
-  // Quick Fix: Changed from getAllTournaments() to getTournaments() to match your storage file!
+ 
   const tournaments = getTournaments();
   
   const id = Date.now();
@@ -167,26 +212,26 @@ function tournamentCreator() {
     }
   };
   
-  // Add the new tournament to your array
+
   tournaments.push(newTournament);
   
-  // 🚀 SINGLE SOURCE OF TRUTH: Let this function handle local + cloud syncing smoothly!
+  
   saveTournaments(tournaments);
   
-  // Set the newly created tournament as the active one in app memory
+  
   if (typeof updateTournament === "function") {
     updateTournament(newTournament);
   } else {
     localStorage.setItem("tournament", JSON.stringify(newTournament));
   }
   
-  // Clean up UI
+  
   hideCreateTournament();
   showAlert("Tournament created!");
   
   input.value = "";
   
-  // Refresh the display list
+  
   if (typeof renderTournamentList === "function") {
     renderTournamentList();
   }
@@ -222,22 +267,26 @@ function deleteTeam(index) {
 }
 
 
-function rebuildTableFromMatches() {
-  const tournament = getCurrentTournament();
+
+
+
+async function rebuildTableFromMatches() {
+  const tournament = await getCurrentTournament();
   if (!tournament) return;
 
   const table = {};
 
+
   tournament.teams.forEach(team => {
     table[team] = {
       name: team,
-      p: 0,
-      w: 0,
-      d: 0,
-      l: 0,
+      played: 0,
+      wins: 0,
+      draws: 0,
+      losses: 0,
       gf: 0,
       ga: 0,
-      pts: 0
+      points: 0
     };
   });
 
@@ -247,37 +296,47 @@ function rebuildTableFromMatches() {
     const home = table[match.home];
     const away = table[match.away];
 
-    const hg = match.homeGoals;
-    const ag = match.awayGoals;
 
-    home.p++;
-    away.p++;
+    const hg = Number(match.homeGoals || 0);
+    const ag = Number(match.awayGoals || 0);
 
+    
+    home.played++;
+    away.played++;
+
+    
     home.gf += hg;
     home.ga += ag;
 
     away.gf += ag;
     away.ga += hg;
 
+   
     if (hg > ag) {
-      home.w++;
-      home.pts += 3;
-      away.l++;
+      home.wins++;
+      home.points += 3;
+      away.losses++;
     } else if (ag > hg) {
-      away.w++;
-      away.pts += 3;
-      home.l++;
+      away.wins++;
+      away.points += 3;
+      home.losses++;
     } else {
-      home.d++;
-      away.d++;
-      home.pts += 1;
-      away.pts += 1;
+      home.draws++;
+      away.draws++;
+      home.points += 1;
+      away.points += 1;
     }
   });
 
   tournament.table = Object.values(table);
 
-  updateTournament(tournament);
+
+  await updateTournament(tournament);
+  
+ 
+  if (typeof renderTable === "function") {
+    renderTable(tournament.table);
+  }
 }
 
 
@@ -477,29 +536,21 @@ function updateTournament(updatedTournament) {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-function renderTournamentList () {
-const container = document.getElementById("tournamentList");
+// 1. Added async so this function can handle the live cloud download stream
+async function renderTournamentList() {
+  const container = document.getElementById("tournamentList");
   if (!container) return;
   
   container.innerHTML = "";
   
-  const tournaments = getTournaments();
+  // Show a quick loading state while waiting for Firestore to talk back
+  container.innerHTML = `<p class="emptyText">Loading tournaments from cloud...</p>`;
+  
+  // 2. Added await here so it waits for the direct-from-Firestore list array
+  const tournaments = await getTournaments();
+  
+  // Clear the temporary loading state
+  container.innerHTML = "";
   
   if (!tournaments || tournaments.length === 0) {
     container.innerHTML = `
@@ -511,19 +562,19 @@ const container = document.getElementById("tournamentList");
   tournaments.forEach(tournament => {
     const div = document.createElement("div");
     div.className = "tournament-card";
-    const isSelected = selectedTournaments.includes(tournament.id);
+    
+    // Explicit array state check safeguard
+    const isSelected = typeof selectedTournaments !== "undefined" && selectedTournaments.includes(tournament.id);
     
     div.innerHTML = `
-  ${exportMode ? `
-    <div class="check">
-      ${isSelected ? "✔" : ""}
-    </div>
-  ` : ""}
-  <div class="tournament-format">${tournament.format || 'League'}</div>
-
-
-  <h3>${tournament.name}</h3>
-`;
+      ${(typeof exportMode !== "undefined" && exportMode) ? `
+        <div class="check">
+          ${isSelected ? "✔" : ""}
+        </div>
+      ` : ""}
+      <div class="tournament-format">${tournament.format || 'League'}</div>
+      <h3>${tournament.name}</h3>
+    `;
     
     let pressTimer = null;
     let wasLongPress = false;
@@ -533,29 +584,32 @@ const container = document.getElementById("tournamentList");
       wasLongPress = false;
       pressTimer = setTimeout(() => {
         wasLongPress = true;
-        deleteTournament(tournament.id);
-        
+        if (typeof deleteTournament === "function") {
+          deleteTournament(tournament.id);
+        }
         if (navigator.vibrate) navigator.vibrate(50);
       }, longPressDuration);
     };
     
     const cancelPress = () => clearTimeout(pressTimer);
     
-    
     div.addEventListener("click", () => {
-  
-  if (exportMode) {
-    toggleSelect(tournament.id);
-  } else {
-    openTournament(tournament.id);
-  }
-  
-});
+      // Guard clause to ignore standard clicks if a long-press delete action just fired
+      if (wasLongPress) return; 
+
+      if (typeof exportMode !== "undefined" && exportMode) {
+        if (typeof toggleSelect === "function") toggleSelect(tournament.id);
+      } else {
+        if (typeof openTournament === "function") openTournament(tournament.id);
+      }
+    });
     
+    // Touch event binders
     div.addEventListener("touchstart", startPress);
     div.addEventListener("touchend", cancelPress);
     div.addEventListener("touchmove", cancelPress);
     
+    // Mouse fallback event binders
     div.addEventListener("mousedown", startPress);
     div.addEventListener("mouseup", cancelPress);
     div.addEventListener("mouseleave", cancelPress);
@@ -567,85 +621,79 @@ const container = document.getElementById("tournamentList");
 
 
 
+async function getCurrentRound() {
+  const tournament = await getCurrentTournament(); // <- await here
+  return tournament?.currentRound || 1;
+}
 
-
-function getCurrentTournament() {
-  const id = Number(localStorage.getItem("currentTournamentId"));
-  if (!id) return null;
-
-  const tournaments = getTournaments();
-  return tournaments.find(t => t.id === id) || null;
+async function setCurrentRound(round) {
+  const tournament = await getCurrentTournament();
+  if (!tournament) return;
+  tournament.currentRound = round;
+  await updateTournament(tournament);
 }
 
 
 
 
-function getTournaments() {
-  const raw = localStorage.getItem('tournaments');
-  if (!raw) return [];
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// 1. Added async to handle the live Firestore document download
+async function openTournament(id) {
   
-  try {
-    return JSON.parse(raw);
-  } catch (e) {
-    console.error("Failed to parse tournaments:", e);
-    localStorage.removeItem('tournaments');
-    return [];
-  }
-}
+  showActionModal("Opening...", "success");
 
-function saveTournaments(tournaments) {
-  localStorage.setItem('tournaments', JSON.stringify(tournaments));
-}
+  // 2. Clear out the old local array lookup and read directly from the cloud source instead
+  const tournament = await getCurrentTournament(); 
 
-
-
-
-
-  function openTournament(id) {
-  
- showActionModal("Opening...","success");
-
-  const tournaments = getTournaments();
-  const tournament = tournaments.find(t => t.id === id);
-
-  if (!tournament) {
-    showAlert("Tournament not found");
-    return;
+  // Secondary structural check: if the active database pointer isn't set yet, fetch it directly
+  if (!tournament || String(tournament.id) !== String(id)) {
+    setCurrentTournamentId(id); // Set the active document pointer ID
+    const directFetch = await getCurrentTournament();
+    if (!directFetch) {
+      showAlert("Tournament not found in cloud database");
+      return;
+    }
   }
 
-
+  // 3. Keep your UI routing configuration states intact
   localStorage.setItem("currentTournamentId", id);
   localStorage.setItem("currentTournamentFormat", tournament.format);
   localStorage.setItem("currentTournamentName", tournament.name);
   
-  const tournamentName = localStorage.getItem("currentTournamentName");
+  const tournamentName = tournament.name;
  
-if(tournament.format==="league") {
-  document.getElementById("leagueName").textContent = tournamentName;
-  goToTournamentPage();  
+  // Lowercase normalization fallback safeguard check
+  const formatType = (tournament.format || 'league').toLowerCase();
+
+  if (formatType === "league") {
+    document.getElementById("leagueName").textContent = tournamentName;
+    goToTournamentPage();  
+  } else {
+    document.getElementById("cupName").textContent = tournamentName;
+    goToCupPage();
+  }
 }
-else {
-  document.getElementById("cupName").textContent = tournamentName;
-  
-  goToCupPage();
-}
-  
-}
+
 
 
 
-
-function getCurrentRound() {
-  const tournament = getCurrentTournament();
-  return tournament?.currentRound || 1;
-}
-
-function setCurrentRound(round) {
-  const tournament = getCurrentTournament();
-  if (!tournament) return;
-  tournament.currentRound = round;
-  updateTournament(tournament);
-}
 
 
 
@@ -1568,6 +1616,7 @@ function rebuildTableFromMatches() {
   }
 }
 
+
 function renderTable(data = []) {
   const tbody = document.getElementById("tableBody");
   if (!tbody) return;
@@ -1582,25 +1631,28 @@ function renderTable(data = []) {
   data.forEach((team, index) => {
     const tr = document.createElement("tr");
     
+    // Fallback logic to calculate Goal Difference correctly
     const gd = (team.gf || 0) - (team.ga || 0);
     const gdClass = gd < 0 ? 'neg' : '';
     
+    // FIX: Swapped out abbreviated properties (.p, .w, etc.) for your actual database keys
     tr.innerHTML = `
       <td>${index + 1}</td>
-      <td>${team.name || ''}</td>
-      <td>${team.p || 0}</td>
-      <td>${team.w || 0}</td>
-      <td>${team.d || 0}</td>
-      <td>${team.l || 0}</td>
+      <td><strong>${team.name || ''}</strong></td>
+      <td>${team.played || 0}</td>
+      <td>${team.wins || 0}</td>
+      <td>${team.draws || 0}</td>
+      <td>${team.losses || 0}</td>
       <td>${team.gf || 0}</td>
       <td>${team.ga || 0}</td>
-      <td class="${gdClass}">${gd}</td>
-      <td>${team.pts || 0}</td>
+      <td class="${gdClass}">${gd >= 0 ? '+' + gd : gd}</td>
+      <td><strong>${team.points || 0}</strong></td>
     `;
     
     tbody.appendChild(tr);
   });
 }
+
 
 
 function getLeagueWinnerFinal() {
