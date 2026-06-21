@@ -44,6 +44,24 @@ if (signInBtn) {
   });
 }
 
+// Function to trigger a physical browser download of your data
+function exportTournamentsToFile(rawData) {
+  try {
+    const blob = new Blob([rawData], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `tournaments_backup_${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    console.log("[EXPORT] Backup file download triggered successfully.");
+  } catch (err) {
+    console.error("[EXPORT] Failed to download backup file:", err);
+  }
+}
+
 async function runOneTimeMigration(user) {
   try {
     const rawLocalData = localStorage.getItem("tournaments");
@@ -53,14 +71,18 @@ async function runOneTimeMigration(user) {
       return;
     }
 
+    // 1. INSTANT EXPORT: Download the file immediately so you have a physical copy right now
+    console.log("[MIGRATION] Triggering file backup download...");
+    exportTournamentsToFile(rawLocalData);
+
     const localTournaments = JSON.parse(rawLocalData);
     if (!Array.isArray(localTournaments) || localTournaments.length === 0) {
       console.log("[MIGRATION] Local tournaments array is empty.");
-      alert("Local tournaments list is empty. Nothing to migrate.");
+      alert("Local tournaments list is empty. JSON backup file downloaded, but nothing to sync to cloud.");
       return;
     }
 
-    console.log(`[MIGRATION] Found ${localTournaments.length} tournaments. Beginning secure migration...`);
+    console.log(`[MIGRATION] Found ${localTournaments.length} tournaments. Beginning secure cloud upload...`);
     let uploadedCount = 0;
 
     for (const tournament of localTournaments) {
@@ -78,7 +100,8 @@ async function runOneTimeMigration(user) {
       }
     }
 
-    alert(`🎉 Success! Migration completed.\n\n${uploadedCount} tournament records have been safely uploaded from your Netlify local storage into your Firestore cloud database account.\n\nYou can now safely push the main code update.`);
+    // Custom popup alert at the end showing status of both actions
+    alert(`🎉 double protection complete!\n\n1. 📥 FILE BACKUP: A backup file has been downloaded to your device.\n2. ☁️ CLOUD SYNC: ${uploadedCount} tournament records have been safely uploaded into your Firestore account.\n\nVerify your records in the Firebase console, then you are completely safe to deploy the final code update!`);
     console.log("[MIGRATION] Run complete. Check your Firestore console under users/uid/tournaments/");
 
   } catch (err) {
@@ -95,7 +118,7 @@ onAuthStateChanged(auth, async (user) => {
     window.currentUser = user; 
     
     console.log("Logged in as:", user.email);
-    console.log("Starting migration sequence...");
+    console.log("Starting backup and migration sequence...");
     
     await runOneTimeMigration(user);
   } else {
