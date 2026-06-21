@@ -115,3 +115,8 @@ onAuthStateChanged(auth, async (user) => {
     window.currentUser = null;
   }
 });
+
+function getTournaments() {
+  return runtimeTournamentsList;
+}
+
