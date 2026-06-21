@@ -1,355 +1,254 @@
-/*
+const LOGO_DB_NAME = "TournamentLogosDB";
+const LOGO_STORE = "logos";
 
+function openLogoDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(LOGO_DB_NAME, 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(LOGO_STORE)) {
+        db.createObjectStore(LOGO_STORE);
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
 
-// ===== EXPORT =====
-function exportTournament(id) {
-  console.log("[EXPORT] Starting export for id:", id);
-  
+function saveLogoToIndexedDB(key, base64Data) {
+  return openLogoDB().then(db => {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(LOGO_STORE, "readwrite");
+      tx.objectStore(LOGO_STORE).put(base64Data, key);
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => reject(tx.error);
+    });
+  });
+}
+
+async function addTeam(name, logo) {
   try {
-    const tournaments = getTournaments();
-    const tournament = tournaments.find(t => t.id === id);
+    const tournament = getCurrentTournament();
     
     if (!tournament) {
-      showAlert("Tournament not found");
+      showAlert("No tournament selected");
       return;
     }
     
-    // 1. Stringify and base64 encode. No pretty-print to avoid newlines
-    const jsonString = JSON.stringify(tournament);
-    const base64Data = btoa(unescape(encodeURIComponent(jsonString)));
-    
-    console.log("[EXPORT] Tournament stringified. Length:", jsonString.length);
-    console.log("[EXPORT] Base64 length:", base64Data.length);
-    
-    // 2. Wrap in package
-    const exportPackage = {
-      type: "TOURNAMENT_EXPORT",
-      version: "1.0",
-      payload: base64Data,
-      meta: {
-        name: tournament.name,
-        exportedAt: new Date().toISOString()
-      }
-    };
-    
-    const blob = new Blob([JSON.stringify(exportPackage)], { type: "application/json" });
-    const fileName = `${tournament.name.replace(/[^\w]/g, '_')}.json`;
-    const file = new File([blob], fileName, { type: "application/json" });
-    
-    console.log("[EXPORT] File created:", fileName, "Size:", file.size, "bytes");
-    
-    // 3. Share or download
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      navigator.share({
-        title: tournament.name,
-        text: "Tournament export data",
-        files: [file]
-      }).then(() => {
-        console.log("[EXPORT] Share successful");
-      }).catch(err => {
-        console.log("[EXPORT] Share dismissed:", err);
-      });
-    } else {
-      fallbackDownload(file);
-      console.log("[EXPORT] Fallback download triggered");
+    if (!Array.isArray(tournament.teams)) {
+      tournament.teams = [];
     }
+    
+    if (tournament.teams.includes(name)) {
+      showAlert("Team already exists");
+      return;
+    }
+    
+    const logoKey = `${tournament.id}_${name}`;
+    await saveLogoToIndexedDB(logoKey, logo);
+    
+    tournament.teams.push(name);
+    tournament.teamLogos = tournament.teamLogos || {};
+    tournament.teamLogos[name] = logoKey;
+    
+    saveTournament(tournament);
+    
+    showActionModal("✅ Team Registered", "success");
+    
+    if (typeof buildTable === "function") buildTable();
+    if (typeof renderTeams === "function") renderTeams();
     
   } catch (err) {
-    console.error("[EXPORT] Failed:", err);
-    showAlert("Export failed: " + err.message);
+    console.error("[addTeam] Error:", err);
+    showAlert("Failed to add team");
   }
 }
 
-function fallbackDownload(file) {
-  const url = URL.createObjectURL(file);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = file.name;
-  document.body.appendChild(a);
-  a.click();
-  URL.revokeObjectURL(url);
-  document.body.removeChild(a);
-}
-
-// ===== IMPORT =====
-function importTournaments(file) {
-  console.log("[IMPORT] File selected:", file.name, "Size:", file.size, "Type:", file.type);
-  
-  if (!file) {
-    showAlert("No file selected");
-    return;
-  }
-  
-  if (file.size === 0) {
-    showAlert("File is empty");
-    return;
-  }
-  
-  const reader = new FileReader();
-  
-  reader.onload = function(e) {
-    try {
-      const rawText = e.target.result;
-      console.log("[IMPORT] File read. First 200 chars:", rawText.slice(0, 200));
-      
-      // Step 1: Parse outer JSON
-      let rawData;
-      try {
-        rawData = JSON.parse(rawText);
-        console.log("[IMPORT] Outer JSON parsed. Type:", rawData?.type);
-      } catch (e) {
-        throw new Error("File is not valid JSON. Check for extra commas or missing brackets.");
-      }
-      
-      let parsedTournament;
-      
-      // Step 2: Detect format
-      if (rawData?.type === "TOURNAMENT_EXPORT" && rawData?.payload) {
-        console.log("[IMPORT] Detected v1.0 export package");
-        
-        // Step 3: Decode base64 payload
-        let decodedString;
-        try {
-          decodedString = decodeURIComponent(escape(atob(rawData.payload)));
-          console.log("[IMPORT] Base64 decoded. Length:", decodedString.length);
-        } catch (e) {
-          throw new Error("Base64 payload is corrupted. File may be damaged.");
-        }
-        
-        // Step 4: Parse inner tournament JSON
-        try {
-          parsedTournament = JSON.parse(decodedString);
-        } catch (e) {
-          throw new Error("Decoded payload is not valid JSON");
-        }
-        
-      } else if (rawData?.id && rawData?.name) {
-        console.log("[IMPORT] Detected legacy single tournament format");
-        parsedTournament = rawData;
-        
-      } else if (Array.isArray(rawData)) {
-        console.log("[IMPORT] Detected array format");
-        parsedTournament = rawData;
-        
-      } else {
-        throw new Error("Unknown file format. Expected TOURNAMENT_EXPORT or tournament object.");
-      }
-      
-      // Step 5: Normalize to array
-      const data = Array.isArray(parsedTournament) ? parsedTournament : [parsedTournament];
-      console.log("[IMPORT] Normalized to array. Count:", data.length);
-      
-      // Step 6: Validate structure
-      const invalid = data.find(t => !t.id || !t.name || !t.teams);
-      if (invalid) {
-        console.error("[IMPORT] Invalid tournament object:", invalid);
-        throw new Error("One or more tournaments are missing required fields: id, name, teams");
-      }
-      
-      // Step 7: Save
-      const existing = getTournaments();
-      const merged = [...existing, ...data];
-      saveTournaments(merged);
-      
-      console.log("[IMPORT] Saved. Total tournaments:", merged.length);
-      showAlert(`Imported ${data.length} tournament(s) successfully`);
-      
-      if (typeof renderTournamentList === "function") {
-        renderTournamentList();
-      }
-      
-    } catch (err) {
-      console.error("[IMPORT] Failed:", err);
-      showAlert("Import failed: " + err.message);
-    }
-  };
-  
-  reader.onerror = function(e) {
-    console.error("[IMPORT] FileReader error:", e);
-    showAlert("Failed to read file");
-  };
-  
-  reader.readAsText(file);
-}
-
-
-f
-
-
-
-
-
-
-
-
-
-async function signInWithGoogle() {
-  const result = await auth.signInWithPopup(provider);
-  await loadFromFirebase();
-  return result.user;
-}
-
-function signOut() {
-  localStorage.removeItem("tournament");
-  currentTournament = null;
-  return auth.signOut();
-}
-
-*/
-
-
-
-function handleAddTeam() {
-  console.log("[handleAddTeam] Triggered");
-  
+async function handleAddTeam() {
   const nameInput = document.getElementById("teamNameInput");
   const logoInput = document.getElementById("teamLogoInput");
   
   if (!nameInput || !logoInput) {
-    console.error("[handleAddTeam] Missing DOM elements", { nameInput, logoInput });
     showAlert("Error: Form elements not found");
     return;
   }
   
   const name = nameInput.value.trim();
-  console.log("[handleAddTeam] Team name:", name);
   
   if (!name) {
-    console.warn("[handleAddTeam] Empty team name");
     showAlert("Enter a team name");
     return;
   }
   
   const file = logoInput.files[0];
-  console.log("[handleAddTeam] Logo file:", file);
   
   if (!file) {
-    console.warn("[handleAddTeam] No file selected");
     showAlert("Team logo is required");
     return;
   }
   
   if (!file.type.startsWith("image/")) {
-    console.warn("[handleAddTeam] Invalid file type:", file.type);
     showAlert("Please select an image file");
     return;
   }
   
-  console.log("[handleAddTeam] Starting background removal");
-  removeBackground(file, transparentLogo => {
-    console.log("[handleAddTeam] Background removed. Logo size:", transparentLogo?.length);
-    
-    if (!transparentLogo) {
-      console.error("[handleAddTeam] removeBackground returned empty logo");
+  removeBackground(file, async (logo) => {
+    if (!logo) {
       showAlert("Failed to process logo");
       return;
     }
     
-    addTeam(name, transparentLogo);
-    nameInput.value = "";
-    resetLogoUI();
+    try {
+      const tournament = getCurrentTournament();
+      
+      if (!tournament) {
+        showAlert("No tournament selected");
+        return;
+      }
+      
+      if (!Array.isArray(tournament.teams)) {
+        tournament.teams = [];
+      }
+      
+      if (tournament.teams.includes(name)) {
+        showAlert("Team already exists");
+        return;
+      }
+      
+      const logoKey = `${tournament.id}_${name}`;
+      await saveLogoToIndexedDB(logoKey, logo);
+      
+      tournament.teams.push(name);
+      tournament.teamLogos = tournament.teamLogos || {};
+      tournament.teamLogos[name] = logoKey;
+      
+      saveTournament(tournament);
+      
+      nameInput.value = "";
+      resetLogoUI();
+      
+      showActionModal("✅ Team Registered", "success");
+      
+      if (typeof buildTable === "function") buildTable();
+      if (typeof renderTeams === "function") renderTeams();
+      
+    } catch (err) {
+      console.error("[handleAddTeam] Error:", err);
+      showAlert("Something went wrong");
+    }
   });
 }
 
-function addTeam(name, logo) {
-  console.log("[addTeam] Called with:", { name, logoLength: logo?.length });
-  
-  try {
-    let tournament = getCurrentTournament();
-    const allTournaments = getTournaments();
-    
-    if (!tournament && allTournaments.length > 0) {
-      console.warn("[addTeam] currentTournament was null. Falling back to active workspace context.");
-      const activeId = localStorage.getItem("currentTournamentId");
-      if (activeId) {
-        tournament = allTournaments.find(t => String(t.id) === String(activeId));
-      }
-      if (!tournament) {
-        tournament = allTournaments[allTournaments.length - 1];
-      }
-      if (tournament) {
-        currentTournament = tournament;
-        localStorage.setItem("tournament", JSON.stringify(tournament));
-      }
-    }
-    
-    console.log("[addTeam] Resolved tournament context:", tournament);
-    
-    if (!tournament) {
-      console.error("[addTeam] No current tournament found");
-      showAlert("No tournament selected");
-      return;
-    }
-    
-    if (!logo) {
-      console.error("[addTeam] Logo is null/undefined");
-      showAlert("Team logo is required");
-      return;
-    }
-    
-    if (!Array.isArray(tournament.teams)) {
-      console.warn("[addTeam] tournament.teams is not an array. Initializing.");
-      tournament.teams = [];
-    }
-    
-    if (tournament.teams.includes(name)) {
-      console.warn("[addTeam] Team already exists:", name);
-      showAlert("Team already exists");
-      return;
-    }
-    
-    tournament.teams.push(name);
-    tournament.teamLogos = tournament.teamLogos || {};
-    tournament.teamLogos[name] = logo;
-    console.log("[addTeam] Team added. Total teams:", tournament.teams.length);
-    
-    console.log("[addTeam] All tournaments count:", allTournaments.length);
-    let index = allTournaments.findIndex(t => String(t.id) === String(tournament.id));
-    console.log("[addTeam] Tournament index in array:", index);
-    
-    if (index === -1 && allTournaments.length > 0) {
-      index = allTournaments.length - 1;
-    }
-    
-    if (index !== -1) {
-      allTournaments[index] = tournament;
-      localStorage.setItem("tournaments", JSON.stringify(allTournaments));
-      console.log("[addTeam] Saved to localStorage tournaments list");
-    } else {
-      allTournaments.push(tournament);
-      localStorage.setItem("tournaments", JSON.stringify(allTournaments));
-    }
-    
-    updateTournament(tournament);
-    console.log("[addTeam] updateTournament called");
-    
-    showActionModal("✅ Team Registered", "success");
-    
-    if (typeof buildTable === "function") {
-      console.log("[addTeam] Calling buildTable");
-      buildTable();
-    }
-    
-    const updated = getCurrentTournament() || tournament;
-    console.log("[addTeam] Updated tournament reference:", updated);
-    
-    if (typeof renderTable === "function" && typeof getSortedTable === "function" && updated.table) {
-      console.log("[addTeam] Rendering table");
-      renderTable(getSortedTable(updated.table));
-    }
-    
-    if (typeof renderTeams === "function") {
-      console.log("[addTeam] Rendering teams");
-      renderTeams();
-    }
-    
-    console.log("[addTeam] Done");
-    
-  } catch (err) {
-    console.error("[addTeam] Fatal error:", err);
-    showAlert("Something went wrong. Check console for details.");
-  }
+
+function getLogoFromIndexedDB(key) {
+  return openLogoDB().then(db => {
+    return new Promise((resolve) => {
+      const tx = db.transaction(LOGO_STORE, "readonly");
+      const req = tx.objectStore(LOGO_STORE).get(key);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => resolve(null);
+    });
+  });
 }
 
 
 
+async function renderTeams(containerId = "teamList") {
+  const tournament = getCurrentTournament();
+  if (!tournament) return;
+  
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  
+  container.className = "CupTeamsContainer";
+  const counterLabel = document.getElementById("teamCount");
+  const teamadded = document.getElementById("teamsadded");
+  
+  container.innerHTML = "";
+  
+  if (counterLabel) {
+    counterLabel.textContent = `Total Teams Register : ${tournament.teams.length}`;
+  }
+  
+  if (teamadded) {
+    teamadded.textContent = `${tournament.teams.length}`;
+  }
+  
+  tournament.teams.forEach((team, index) => {
+    const div = document.createElement("div");
+    div.className = "team-card";
+    
+    const logoKey = tournament.teamLogos?.[team];
+    
+    div.innerHTML = `
+      <div class="team-swipe-wrapper">
+        <div class="team-actions">
+          <button class="btn-edit" onclick="openEditTeam(${index})">Edit</button>
+          <button class="btn-delete" onclick="deleteTeam(${index})">Delete</button>
+        </div>
+        <div class="team-content">
+          <div class="team-logo-placeholder">?</div>
+          <span>${team}</span>
+        </div>
+      </div>
+    `;    
+    
+    if (logoKey) {
+      getLogoFromIndexedDB(logoKey).then(base64Logo => {
+        const contentDiv = div.querySelector(".team-content");
+        const placeholder = div.querySelector(".team-logo-placeholder");
+        
+        if (base64Logo && contentDiv && placeholder) {
+          const img = document.createElement("img");
+          img.className = "team-logo";
+          img.src = base64Logo;
+          img.alt = team;
+          contentDiv.replaceChild(img, placeholder);
+        }
+      }).catch(err => console.error("Error loading logo:", err));
+    }
+
+    let startX = 0;
+    let currentX = 0;
+    let isSwiping = false;
+
+    const content = div.querySelector(".team-content");
+
+    const start = (x) => {
+      startX = x;
+      isSwiping = true;
+    };
+
+    const move = (x) => {
+      if (!isSwiping) return;
+      currentX = x;
+      let diff = currentX - startX;
+      if (diff < 0) {
+        content.style.transform = `translateX(${diff}px)`;
+      }
+    };
+
+    const end = () => {
+      if (!isSwiping) return;
+      isSwiping = false;
+      let diff = currentX - startX;
+      if (diff < -80) {
+        content.style.transform = "translateX(-120px)";
+      } else {
+        content.style.transform = "translateX(0)";
+      }
+    };
+
+    div.addEventListener("touchstart", (e) => start(e.touches[0].clientX));
+    div.addEventListener("mousedown", (e) => start(e.clientX));
+
+    div.addEventListener("touchmove", (e) => move(e.touches[0].clientX));
+    div.addEventListener("mousemove", (e) => move(e.clientX));
+
+    div.addEventListener("touchend", end);
+    div.addEventListener("mouseup", end);
+    div.addEventListener("mouseleave", end);
+    
+    container.appendChild(div);
+  });
+}
