@@ -1,3 +1,33 @@
+const PAGES = [
+  "tournamentPage",
+  "tablePage",
+  "formViewPage",
+  "fixturePage",
+  "cupPage",
+  "recordsView",
+  "tablePageHead",
+  "fixturePageHead",
+  "nav",
+  "cupHome",
+  "cupTab",
+  "teamView"
+  
+  
+  
+];
+
+function hideAllPages() {
+  PAGES.forEach(id => {
+    const pageElement = document.getElementById(id);
+    if (pageElement) {
+      pageElement.style.display = "none";
+    }
+  });
+}
+
+
+
+
 function showAlert(message) {
   const modal = document.getElementById("alertModal");
   const text = document.getElementById("alertText");
@@ -50,8 +80,6 @@ function showActionModal(message, type = "") {
 
 
 
-
-
 let confirmCallback = null;
 
 function showConfirmModal(message, callback) {
@@ -71,7 +99,7 @@ function confirmYes() {
 
 function confirmNo() {
   document.getElementById("confirmModal").style.display = "none";
-  confirmCallback = null; // Just clear it out and do nothing else!
+  confirmCallback = null; 
 }
 
 
@@ -87,10 +115,10 @@ function handleGenerateFixtures() {
       if (!confirmed) return;
       
       deleteFixtures(true);
-      proceedToInput(); // continue flow
+      proceedToInput();
     });
   } else {
-    proceedToInput(); // no fixtures → go ahead
+    proceedToInput();
   }
 }
 
@@ -110,28 +138,6 @@ function proceedToInput() {
   });
 }
 
-
-function populateTeamDropdowns() {
-  const tournament = getCurrentTournament();
-  if (!tournament) return;
-
-  const home = document.getElementById("homeTeam");
-  const away = document.getElementById("awayTeam");
-
-  home.innerHTML = "";
-  away.innerHTML = "";
-
-  tournament.teams.forEach(team => {
-    const opt1 = document.createElement("option");
-    const opt2 = document.createElement("option");
-
-    opt1.value = opt2.value = team;
-    opt1.textContent = opt2.textContent = team;
-
-    home.appendChild(opt1);
-    away.appendChild(opt2);
-  });
-}
 
 
 
@@ -179,3 +185,958 @@ function hideCreateTournament() {
 function openCreateTournament() {
   document.getElementById("createTour").style.display = "block";
 }
+
+
+
+let activeInput = null;
+
+document.getElementById('homeGoals').addEventListener('focus', () => openNumpad('homeGoals'));
+document.getElementById('awayGoals').addEventListener('focus', () => openNumpad('awayGoals'));
+
+
+function openNumpad(inputId) {
+  activeInput = document.getElementById(inputId);
+  
+  document.getElementById("homeGoals").classList.remove("active");
+  document.getElementById("awayGoals").classList.remove("active");
+  
+  activeInput.classList.add("active");
+  
+  document.getElementById("numpad").classList.remove("hidden");
+}
+
+
+
+function pressNum(n) {
+  if (!activeInput) return;
+  activeInput.value = (activeInput.value || '') + n;
+}
+function clearNum() {
+  if (!activeInput) return;
+  activeInput.value = '';
+}
+
+
+
+
+
+function goToCupPage() {
+  document.getElementById("listOfTournamentPage").style.display = "none";
+  hideAllPages();
+  document.getElementById("tournamentPage").style.display = "block";
+  document.getElementById("cupSchedule").style.display = "block";
+  document.getElementById("tourListPageHead").style.display = "none";
+  document.getElementById("cupPage").style.display = "block";
+  renderCupFixtures();
+  document.getElementById("cupPageHead").style.display = "flex";
+  document.getElementById("cupHome").style.display = "flex";
+
+  const tournament = getCurrentTournament();
+if (tournament) {
+  renderCupTables();
+  renderCupFixtures()
+  toggleCupView("tables");
+}
+
+}
+
+
+function openTournamentPage() {
+  const format = localStorage.getItem("currentTournamentFormat");
+  
+  if (!format) {
+    showAlert("No tournament open");
+    return;
+  }
+  
+  if (format === "league") {
+    goToTournamentPage();
+  } else {
+    goToCupPage();
+  }
+}
+
+
+function closeResultRecord() {
+  document.getElementById("resultRecord").style.display = "none";
+  
+  document.getElementById("homeGoals").classList.remove("active");
+  document.getElementById("awayGoals").classList.remove("active");
+  
+  activeInput = null;
+}
+
+
+
+function setActiveNav(buttonId) {
+  document
+    .querySelectorAll(".bottom-nav button")
+    .forEach(btn => btn.classList.remove("active"));
+  
+  document.getElementById(buttonId)?.classList.add("active");
+}
+
+
+
+
+function openLeagueRecorder(match) {
+  if (!match) return;
+  
+  document.getElementById("homeTeam").textContent = match.home;
+  document.getElementById("awayTeam").textContent = match.away;
+  
+  document.getElementById("homeGoals").value =
+    match.played ? match.homeGoals : "";
+  
+  document.getElementById("awayGoals").value =
+    match.played ? match.awayGoals : "";
+  
+  document.getElementById("resultRecord").style.display = "block";
+  
+  activeInput = "homeGoals";
+  
+  document.getElementById("homeGoals").classList.add("active");
+  document.getElementById("awayGoals").classList.remove("active");
+  
+  document.getElementById("numpad").classList.remove("hidden");
+}
+
+
+
+const logoInput = document.getElementById("teamLogoInput");
+const logoPreview = document.getElementById("teamLogoPreview");
+
+logoInput.addEventListener("change", function() {
+  const file = this.files[0];
+  
+  if (!file) {
+    logoPreview.src = "";
+    logoPreview.classList.remove("show");
+    return;
+  }
+  
+  const reader = new FileReader();
+  
+  reader.onload = function(e) {
+    logoPreview.src = e.target.result;
+    logoPreview.classList.add("show"); 
+  };
+  
+  reader.readAsDataURL(file);
+});
+
+
+function toggleView(view) {
+  const tableView = document.getElementById("tableView");
+  const formView = document.getElementById("formView");
+  const recordsView = document.getElementById("recordsView");
+  const teamView = document.getElementById("teamView");
+  
+  const views = [tableView, formView, recordsView, teamView];
+  
+  views.forEach(v => {
+    if (!v) return;
+    v.style.display = "none";
+  });
+  
+  document.querySelectorAll(".btn-tablePage button").forEach(btn => {
+    btn.classList.remove("active");
+  });
+  
+  const activeBtn =
+    document.querySelector(`[data-view="${view}"]`) ||
+    document.getElementById(`${view}Btn`);
+  
+  if (activeBtn) activeBtn.classList.add("active");
+  
+  currentView = view;
+  
+  let activeView = null;
+  
+  if (view === "table") {
+    activeView = tableView;
+  } else if (view === "form") {
+    activeView = formView;
+    renderFormView();
+  } else if (view === "records") {
+    activeView = recordsView;
+    renderRecords();
+  } else if (view === "team") {
+    activeView = teamView;
+    renderTeams();
+  }
+  
+  if (!activeView) return;
+  
+  activeView.style.display = "block";
+}  
+
+
+
+
+
+
+
+let currentPage = null;
+
+function setPageAndToggleMenu(page) {
+  currentPage = page;
+  toggleMenu();
+}
+
+
+function closeMenu() {
+  const menu = document.getElementById("sideMenu");
+  const overlay = document.getElementById("menuOverlay");
+  
+  menu.classList.remove("open");
+  overlay.classList.remove("active");
+}
+
+
+function toggleMenu() {
+  const menu = document.getElementById("sideMenu");
+  const overlay = document.getElementById("menuOverlay");
+  
+  menu.classList.toggle("open");
+  overlay.classList.toggle("active");
+  
+  if (menu.classList.contains("open")) {
+    renderMenu();
+  }
+}
+
+
+
+function renderMenu() {
+  const menu = document.getElementById("sideMenu");
+  const items = menuConfig[currentPage] || [];
+  
+  menu.innerHTML = `
+    <div class="menu-header">
+      ${currentPage? currentPage.toUpperCase() : "MENU"}
+    </div>
+
+    ${items.map(item => `
+      <button class="menu-item" onclick="handleMenuAction('${item.action}')">
+        ${item.label}
+      </button>
+    `).join("")}
+  `;
+}
+
+function handleMenuAction(action) {
+  closeMenu();
+  
+  const actions = {
+    addTeam: openAddTeam,
+    importTeams: importTeams,
+    deleteTeam:deleteTeamInfo,
+    createTournament: openCreateTournament,
+    enableExportMode: enableExportMode,
+    newCup:openCupBox,
+    importTournament:
+    openImportTournament,
+    openTournament:openTournamentInfo,
+    deleteTournament:deleteTournamentInfo,
+    shareGroupTable:shareCupTable,
+    
+    deleteCupTeam:deleteCupTeamInfo
+    
+  
+  };
+  
+  actions[action]?.();
+}
+
+const menuConfig = {
+  cup: [
+    { label: "Create New Cup", 
+    action: "newCup" },
+    
+    { label: "Register New Teams", action: "addTeam" },
+    { label: "Import Teams", action: "importTeams" },
+    { label: "Export Team", action: "exportTeam" },
+    { label: "Delete Team", action: "deleteCupTeam" },
+    { label: "Share Group Table", action: "shareGroupTable" },
+    { label: "Share Group Matches", action: "shareGroupMatches" }
+  ],
+  
+  league: [
+    { label: "Register New Teams", action: "addTeam" },
+    { label: "Import Teams", action: "importTeams" },
+    { label: "Edit or Delete Team", action: "deleteTeam" }
+  ],
+  tournaments: [
+    { label: "Open Tournament", action: "openTournament" },
+    { label: "Create New Tournament", action: "createTournament" },
+    { label: "Import Tournament", action: "importTournament" },
+    { label: "Export Tournament", action: "enableExportMode" },
+    { label: "Delete Tournament", action: "deleteTournament" }
+    
+  ]
+};
+
+function openAddTeam() {
+ toggleView('team');
+  closeMenu();
+  document.getElementById("addNewTeam").style.display = "block";
+  
+}
+
+function closeAddTeam() {
+  document.getElementById("addNewTeam").style.display = "none";
+  toggleView('team');
+}
+
+
+function deleteTeamInfo() {
+  closeMenu();
+  showAlert("Swap to the left on  the team you want to delete or edit");
+  
+ toggleView("team");
+  }
+  
+  
+  function deleteCupTeamInfo() {
+  closeMenu();
+  toggleCupView("cupBox");
+toggleCupSetUpView("teams")
+  showAlert("Click and hold the team you want to delete");
+  
+ 
+  }
+  
+  
+  function deleteTournamentInfo() {
+  closeMenu();
+  showAlert("Click and hold on the Tournament you want to delete");
+
+}
+  
+ function openTournamentInfo() {
+   
+  showAlert("Click on the tournament You want to Open");
+  closeMenu();
+  }
+  
+
+
+ function openCupBox() {
+ 
+  closeMenu();
+  toggleCupView('cupBox');
+  
+  }
+  
+  
+  function openImportTournament() {
+  document.getElementById("importTournamentInput").click();
+}
+
+
+
+
+
+function handleImport(event) {
+  const file = event.target.files[0];
+  if (file) {
+    importTournaments(file);
+  }
+}
+
+
+
+let exportMode = false;
+let selectedTournaments = [];
+
+
+function enableExportMode() {
+  exportMode = true;
+  selectedTournaments = [];
+  
+  document.getElementById("confirmExportBtn").style.display = "inline-flex";
+  document.getElementById("exitExportBtn").style.display = "inline-flex";
+  
+ 
+    showAlert("Tap tournaments to select then export")
+  
+  renderTournamentList();
+}
+
+function exitExportMode() {
+  exportMode = false;
+  selectedTournaments = [];
+  
+  document.getElementById("confirmExportBtn").style.display = "none";
+  document.getElementById("exitExportBtn").style.display = "none";
+ 
+  
+  renderTournamentList();
+}
+
+
+
+function toggleSelect(id) {
+  if (selectedTournaments.includes(id)) {
+    selectedTournaments = selectedTournaments.filter(t => t !== id);
+  } else {
+    selectedTournaments.push(id);
+  }
+  
+  renderTournamentList();
+}
+
+
+
+function exportSelectedTournaments() {
+  const tournaments = getTournaments();
+
+  const selected = tournaments.filter(t =>
+    selectedTournaments.includes(t.id)
+  );
+
+  if (selected.length === 0) {
+    showAlert("No tournaments selected");
+    return;
+  }
+
+  const blob = new Blob(
+    [JSON.stringify(selected, null, 2)],
+    { type: "application/json" }
+  );
+
+  const file = new File(
+    [blob],
+    `tournaments-${selected.length}.json`,
+    { type: "application/json" }
+  );
+
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    navigator.share({
+      title: "Tournaments Export",
+      text: "Selected tournaments backup",
+      files: [file]
+    });
+  } else {
+    fallbackDownload(file);
+  }
+
+  exitExportMode();
+}
+
+
+function fallbackDownload(file) {
+  const url = URL.createObjectURL(file);
+  
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = file.name;
+  
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  
+  URL.revokeObjectURL(url);
+  
+  showAlert("File downloaded");
+}
+
+
+
+
+function openListModal(title, html) {
+  document.getElementById("listModalTitle").textContent = title;
+  document.getElementById("listModalContent").innerHTML = html;
+  
+  document.getElementById("listModal").style.display = "flex";
+}
+
+function closeListModal() {
+  document.getElementById("listModal").style.display = "none";
+}
+
+
+function getTournamentTeams(tournamentId) {
+  const tournaments = getTournaments();
+  
+  const tournament = tournaments.find(
+    t => String(t.id) === String(tournamentId)
+  );
+  
+  return tournament?.teams || [];
+}
+
+function getImportSources() {
+  const currentId = localStorage.getItem("currentTournamentId");
+  
+  return getTournaments().filter(
+    t => String(t.id) !== String(currentId)
+  );
+}
+
+function openListModal(title, contentHTML) {
+  const modal = document.getElementById("listModal");
+  const titleEl = document.getElementById("listModalTitle");
+  const contentEl = document.getElementById("listModalContent");
+  
+  if (!modal || !titleEl || !contentEl) return;
+  
+  titleEl.textContent = title;
+  contentEl.innerHTML = contentHTML;
+  modal.style.display = "flex";
+}
+
+function closeListModal() {
+  const modal = document.getElementById("listModal");
+  if (modal) modal.style.display = "none";
+}
+
+function importTeams() {
+  const currentId = localStorage.getItem("currentTournamentId");
+  
+  const tournaments = getTournaments().filter(
+    t => String(t.id) !== String(currentId)
+  );
+  
+  if (!tournaments.length) {
+    showAlert("No tournaments available");
+    return;
+  }
+  
+  const html = tournaments
+    .map(
+      t => `
+        <button
+          type="button"
+          class="list-item-btn"
+          data-id="${t.id}"
+        >
+          ${t.name}
+        </button>
+      `
+    )
+    .join("");
+  
+  openListModal("Import Teams From", html);
+}
+
+document.addEventListener("click", function(e) {
+  const btn = e.target.closest(".list-item-btn");
+  if (!btn) return;
+  
+  const sourceId = btn.dataset.id;
+  
+  console.log("Import clicked:", sourceId);
+  
+  importAllTeamsFromTournament(sourceId);
+});
+
+function importAllTeamsFromTournament(sourceId) {
+  const current = getCurrentTournament();
+  
+  const source = getTournaments().find(
+    t => String(t.id) === String(sourceId)
+  );
+  
+  if (!current || !source) {
+    console.warn("Missing tournament:", { current, source });
+    return;
+  }
+  
+  current.teams = current.teams || [];
+  current.teamLogos = current.teamLogos || {};
+  
+  let imported = 0;
+  
+  source.teams.forEach(team => {
+    if (!current.teams.includes(team)) {
+      current.teams.push(team);
+      
+      if (source.teamLogos?.[team]) {
+        current.teamLogos[team] = source.teamLogos[team];
+      }
+      
+      imported++;
+    }
+  });
+  
+  updateTournament(current);
+  
+  closeListModal();
+  
+  showAlert(`${imported} team(s) imported`);
+  
+  if (typeof renderTeams === "function") {
+    renderTeams();
+  }
+}
+
+
+
+function removeBackground(file, callback) {
+  const img = new Image();
+  
+  img.onload = () => {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = img.width;
+    canvas.height = img.height;
+    
+    ctx.fillStyle = "#2a2a2a";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0);
+    
+    callback(canvas.toDataURL("image/png"));
+  };
+  
+  img.src = URL.createObjectURL(file);
+}
+
+
+
+let editingIndex = null;
+
+function openEditTeam(index) {
+  const tournament = getCurrentTournament();
+  if (!tournament) return;
+  
+  editingIndex = index;
+  const currentName = tournament.teams[index];
+  
+  document.getElementById("editTitle").textContent = "Edit Team";
+  document.getElementById("editNameInput").value = currentName;
+  document.getElementById("editLogoInput").value = "";
+  
+  document.getElementById("editModal").classList.add("show");
+}
+
+function closeEditModal() {
+  editingIndex = null;
+  document.getElementById("editModal").classList.remove("show");
+  document.getElementById("editNameInput").value = "";
+  document.getElementById("editLogoInput").value = "";
+  const preview = document.getElementById("logoPreview");
+
+preview.src = "";
+renderTeams("cupTeamsContainer");
+preview.style.display = "none";
+}
+
+
+document.getElementById("editLogoInput").addEventListener("change", function(e) {
+  const file = e.target.files[0];
+  const preview = document.getElementById("logoPreview");
+  
+  if (file) {
+    const reader = new FileReader();
+    
+    reader.onload = function(event) {
+      preview.src = event.target.result;
+      preview.style.display = "block";
+    };
+    
+    reader.readAsDataURL(file);
+  } else {
+    preview.src = "";
+    preview.style.display = "none";
+  }
+});
+
+
+
+function saveEdit() {
+  const tournament = getCurrentTournament();
+  if (!tournament || editingIndex === null) {
+    showAlert( "Something went wrong. Please try again");
+    return;
+  }
+  
+  const newName = document.getElementById("editNameInput").value.trim();
+  const fileInput = document.getElementById("editLogoInput");
+  const oldName = tournament.teams[editingIndex];
+  
+  if (!newName) {
+    showAlert("Team name cannot be empty");
+    return;
+  }
+  
+  if (newName !== oldName && tournament.teams.includes(newName)) {
+    showAlert ("A team with this name already exists");
+    return;
+  }
+  
+  tournament.teams = tournament.teams || [];
+  tournament.teamLogos = tournament.teamLogos || {};
+  tournament.matches = tournament.matches || [];
+  tournament.groupMatches = tournament.groupMatches || [];
+  tournament.knockoutMatches = tournament.knockoutMatches || [];
+  
+  tournament.teams[editingIndex] = newName;
+  
+  const updateMatches = (arr) => {
+  if (!Array.isArray(arr)) return;
+  arr.forEach((match) => {
+    if (!match) return;
+    
+    // Update object.name if it matches oldName
+    if (match.home && typeof match.home === 'object' && match.home.name === oldName) {
+      match.home.name = newName;
+    }
+    if (match.away && typeof match.away === 'object' && match.away.name === oldName) {
+      match.away.name = newName;
+    }
+    
+    // Keep this for group/legacy matches that use strings
+    if (match.home === oldName) match.home = newName;
+    if (match.away === oldName) match.away = newName;
+  });
+}; 
+
+  updateMatches(tournament.matches);
+  updateMatches(tournament.groupMatches);
+  updateMatches(tournament.knockoutMatches);
+  
+  if (fileInput.files && fileInput.files[0]) {
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      tournament.teamLogos[newName] = e.target.result;
+      handleSave(tournament, newName, oldName);
+    };
+    
+    reader.onerror = () => {
+      showAlert("Failed to read image <br> Ensure you select a jpeg or png file");
+    };
+    
+    reader.readAsDataURL(file);
+  } else {
+    handleSave(tournament, newName, oldName);
+  }
+}
+
+function handleSave(tournament, newName, oldName) {
+  if (newName !== oldName && tournament.teamLogos && tournament.teamLogos[oldName]) {
+    tournament.teamLogos[newName] = tournament.teamLogos[oldName];
+    delete tournament.teamLogos[oldName];
+  }
+  
+  try {
+    updateTournament(tournament);
+  } catch (e) {
+    showActionModal("Failed to save changes. Please try again", "delete");
+    return;
+  }
+  
+  
+  
+  try {
+  if (document.getElementById("teamList")) renderTeams("teamList");
+  if (document.getElementById("cupTeamsContainer")) renderTeams("cupTeamsContainer");
+  
+  rebuildTableFromMatches();
+  if (typeof renderFixtures === "function") renderFixtures();
+  if (typeof renderFullBracket === "function") renderFullBracket();
+} catch (e) {
+  console.error(e);
+  showActionModal("Team saved but something went wrong", "delete");
+  return;
+}
+
+  closeEditModal();
+  showActionModal("Team updated successfully", "success");
+}function handleSave(tournament, newName, oldName) {
+  if (newName !== oldName && tournament.teamLogos && tournament.teamLogos[oldName]) {
+    tournament.teamLogos[newName] = tournament.teamLogos[oldName];
+    delete tournament.teamLogos[oldName];
+  }
+  
+  try {
+    updateTournament(tournament);
+  } catch (e) {
+    showActionModal("Failed to save changes. Please try again", "delete");
+    return;
+  }
+  
+  try {
+    renderTeams();
+    rebuildTableFromMatches();
+    if (typeof renderFixtures === "function") renderFixtures();
+    if (typeof renderFullBracket === "function") renderFullBracket();
+  } catch (e) {
+    showActionModal("Team saved but something went wrong", "delete");
+    return;
+  }
+  
+  closeEditModal();
+  showActionModal("Team updated successfully", "success");
+}
+
+async function shareTable() {
+  const wrapper = document.querySelector('.table-wrapper');
+  const wasInScreenshotMode = wrapper.classList.contains('screenshot-mode');
+
+  wrapper.classList.add('screenshot-mode');
+
+  await new Promise(resolve => setTimeout(resolve, 100));
+
+  try {
+    const canvas = await html2canvas(wrapper, {
+      backgroundColor: '#161b22',
+      scale: 2,
+      useCORS: true
+    });
+
+    canvas.toBlob(async (blob) => {
+      const file = new File([blob], 'league-table.png', { type: 'image/png' });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title: 'eFootball League Table',
+          text: 'League Volume 8',
+          files: [file]
+        });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'league-table.png';
+        a.click();
+        URL.revokeObjectURL(url);
+        showActionModal('Image downloaded! Share it manually.','success');
+      }
+    });
+
+  } catch (err) {
+    console.error('Share failed:', err);
+    showActionModal('Could not capture table', 'delete');
+  } finally {
+    if (!wasInScreenshotMode) {
+      wrapper.classList.remove('screenshot-mode');
+    }
+  }
+}
+
+
+async function shareCupTable() {
+  const wrapper = document.getElementById('cupTables');
+  
+  if (!wrapper) {
+    showActionModal('Screenshot target area not found!', 'delete');
+    return;
+  }
+  
+  const wasInScreenshotMode = wrapper.classList.contains('screenshot-mode');
+  wrapper.classList.add('screenshot-mode');
+  
+  await new Promise(resolve => setTimeout(resolve, 100));
+  
+  try {
+    const canvas = await html2canvas(wrapper, {
+      backgroundColor: '#161b22',
+      scale: 2,
+      useCORS: true
+    });
+    
+    canvas.toBlob(async (blob) => {
+      if (!blob) {
+        showActionModal('Failed to process screenshot image.', 'delete');
+        return;
+      }
+      
+      const file = new File([blob], 'match-records.png', {
+        type: 'image/png'
+      });
+      
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title: 'eFootball Match Records',
+          text: 'Group Stage Matches',
+          files: [file]
+        });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'match-records.png';
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        showActionModal('Image downloaded! Share it manually.', 'success');
+      }
+    });
+    
+  } catch (err) {
+    console.error('Share failed:', err);
+    showActionModal('Could not capture records', 'delete');
+  } finally {
+    if (!wasInScreenshotMode) {
+      wrapper.classList.remove('screenshot-mode');
+    }
+  }
+}
+
+
+async function shareCupFixture() {
+  const wrapper = document.getElementById('cupFixtures');
+  
+  if (!wrapper) {
+    showActionModal('Screenshot target area not found!', 'delete');
+    return;
+  }
+  
+  const wasInScreenshotMode = wrapper.classList.contains('screenshot-mode');
+  wrapper.classList.add('screenshot-mode');
+  
+  await new Promise(resolve => setTimeout(resolve, 100));
+  
+  try {
+    const canvas = await html2canvas(wrapper, {
+      backgroundColor: '#161b22',
+      scale: 2,
+      useCORS: true
+    });
+    
+    canvas.toBlob(async (blob) => {
+      if (!blob) {
+        showActionModal('Failed to process screenshot image.', 'delete');
+        return;
+      }
+      
+      const file = new File([blob], 'match-records.png', {
+        type: 'image/png'
+      });
+      
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title: 'eFootball Match Records',
+          text: 'Group Stage Matches',
+          files: [file]
+        });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'match-records.png';
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        showActionModal('Image downloaded! Share it manually.', 'success');
+      }
+    });
+    
+  } catch (err) {
+    console.error('Share failed:', err);
+    showActionModal('Could not capture records', 'delete');
+  } finally {
+    if (!wasInScreenshotMode) {
+      wrapper.classList.remove('screenshot-mode');
+    }
+  }
+}
+
+
+  
+
+
