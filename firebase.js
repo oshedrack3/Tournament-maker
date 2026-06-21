@@ -1,12 +1,9 @@
-
-
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import {
-  getAuth,
-  signInWithEmailAndPassword,
-  onAuthStateChanged
+import { 
+  getAuth, 
+  signInWithEmailAndPassword, 
+  onAuthStateChanged 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -72,19 +69,19 @@ async function runOneTimeMigration(user) {
       alert("No local data found to migrate.");
       return;
     }
-    
+
     console.log("[MIGRATION] Exporting physical backup file...");
     exportTournamentsToFile(rawLocalData);
-    
+
     const localTournaments = JSON.parse(rawLocalData);
     if (!Array.isArray(localTournaments) || localTournaments.length === 0) {
       alert("Local storage file downloaded, but list array is empty.");
       return;
     }
-    
+
     console.log(`[MIGRATION] Forcing push for ${localTournaments.length} tournament files directly to Cloud...`);
     let uploadedCount = 0;
-    
+
     for (const tournament of localTournaments) {
       if (!tournament.id) continue;
       
@@ -94,9 +91,9 @@ async function runOneTimeMigration(user) {
       console.log(`[MIGRATION] Force-written tournament ID: ${tournament.id}`);
       uploadedCount++;
     }
-    
+
     alert(`🎉 Migration complete!\n\n1. 📥 FILE BACKUP: A physical copy has been saved to your downloads folder.\n2. ☁️ CLOUD SYNC: ${uploadedCount} tournaments have been pushed to Firestore.\n\nYou can now deploy your final system update layout!`);
-    
+
   } catch (err) {
     console.error("[MIGRATION] Critical operation error:", err);
     alert("Migration operation crashed: " + err.message);
@@ -108,7 +105,7 @@ onAuthStateChanged(auth, async (user) => {
     if (authModal) authModal.style.display = "none";
     if (userInfo) userInfo.style.display = "block";
     if (userEmail) userEmail.innerText = user.email;
-    window.currentUser = user;
+    window.currentUser = user; 
     
     console.log("Logged in as:", user.email);
     await runOneTimeMigration(user);
