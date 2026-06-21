@@ -1,37 +1,36 @@
 let currentTournament = null;
 
-
 async function renderFixtures() {
-    const tournament = await getCurrentTournament();
-    if (!tournament || !tournament.matches) return;
-    
-    const container = document.getElementById("fixtureList");
-    if (!container) return;
-    container.innerHTML = "";
-    
-    const searchQuery = document
-      .getElementById("fixtureSearchInput")
-      ?.value
-      ?.toLowerCase() || "";
-    
-    const currentRound = await getCurrentRound(); // <- add await
-    const maxRound = Math.max(
-      ...tournament.matches.map(m => m.round || 1),
-      1
+  const tournament = getCurrentTournament();
+  if (!tournament || !tournament.matches) return;
+  
+  const container = document.getElementById("fixtureList");
+  if (!container) return;
+  container.innerHTML = "";
+  
+  const searchQuery = document
+    .getElementById("fixtureSearchInput")
+    ?.value
+    ?.toLowerCase() || "";
+  
+  const currentRound = getCurrentRound();
+  const maxRound = Math.max(
+    ...tournament.matches.map(m => m.round || 1),
+    1
+  );
+  
+  const roundLabel = document.getElementById("roundLabel");
+  if (roundLabel) {
+    roundLabel.innerText =
+      maxRound === 1 ? "" : `Round ${currentRound}/${maxRound}`;
+  }
+  
+  let roundMatches = tournament.matches;
+  
+  if (!searchQuery && maxRound !== 1) {
+    roundMatches = roundMatches.filter(
+      m => (m.round || 1) === currentRound
     );
-    
-    const roundLabel = document.getElementById("roundLabel");
-    if (roundLabel) {
-      roundLabel.innerText =
-        maxRound === 1 ? "" : `Round ${currentRound}/${maxRound}`;
-    }
-    
-    let roundMatches = tournament.matches;
-    
-    if (!searchQuery && maxRound !== 1) {
-      roundMatches = roundMatches.filter(
-        m => (m.round || 1) === currentRound
-      );;
   }
   
   if (searchQuery) {
@@ -50,30 +49,23 @@ async function renderFixtures() {
   
   roundMatches.forEach(match => {
     const div = document.createElement("div");
-    
     div.className = `fixture-row ${match.played ? "played" : "not-played"}`;
     
-    const homeLogo = tournament.teamLogos?.[match.home];
-    const awayLogo = tournament.teamLogos?.[match.away];
+    const homeLogoKey = tournament.teamLogos?.[match.home];
+    const awayLogoKey = tournament.teamLogos?.[match.away];
     
     div.innerHTML = `
       <div class="fixture-label">League</div>
       
       <div class="fixture-row-content">
         <div class="fixture-teams-stack">
-          <div class="team-row-item">
-            ${homeLogo 
-              ? `<img class="fixture-team-logo" src="${homeLogo}">` 
-              : `<div class="fixture-team-logo-placeholder">?</div>`
-            }
+          <div class="team-row-item team-home-container">
+            <div class="fixture-team-logo-placeholder">?</div>
             <span class="fixture-team-name">${match.home}</span>
           </div>
           
-          <div class="team-row-item">
-            ${awayLogo 
-              ? `<img class="fixture-team-logo" src="${awayLogo}">` 
-              : `<div class="fixture-team-logo-placeholder">?</div>`
-            }
+          <div class="team-row-item team-away-container">
+            <div class="fixture-team-logo-placeholder">?</div>
             <span class="fixture-team-name">${match.away}</span>
           </div>
         </div>
@@ -92,6 +84,34 @@ async function renderFixtures() {
       </div>
     `;
 
+    if (homeLogoKey) {
+      getLogoFromIndexedDB(homeLogoKey).then(base64Logo => {
+        const homeRow = div.querySelector(".team-home-container");
+        const placeholder = homeRow?.querySelector(".fixture-team-logo-placeholder");
+        
+        if (base64Logo && homeRow && placeholder) {
+          const img = document.createElement("img");
+          img.className = "fixture-team-logo";
+          img.src = base64Logo;
+          homeRow.replaceChild(img, placeholder);
+        }
+      }).catch(err => console.error("Error loading home logo:", err));
+    }
+
+    if (awayLogoKey) {
+      getLogoFromIndexedDB(awayLogoKey).then(base64Logo => {
+        const awayRow = div.querySelector(".team-away-container");
+        const placeholder = awayRow?.querySelector(".fixture-team-logo-placeholder");
+        
+        if (base64Logo && awayRow && placeholder) {
+          const img = document.createElement("img");
+          img.className = "fixture-team-logo";
+          img.src = base64Logo;
+          awayRow.replaceChild(img, placeholder);
+        }
+      }).catch(err => console.error("Error loading away logo:", err));
+    }
+
     div.style.cursor = "pointer";
     div.addEventListener("click", () => {
       if (typeof openLeagueRecorder === "function") {
@@ -104,15 +124,14 @@ async function renderFixtures() {
 }
 
 
-
-async function nextRound() {
+function nextRound() {
   console.log("[nextRound] Called");
   
-  const tournament = await getCurrentTournament(); // <- add await
+  const tournament = getCurrentTournament();
   console.log("[nextRound] Current tournament:", tournament);
   
   if (!tournament) {
-    console.error("[nextRound] No tournament loaded. Call loadFromFirebase first.");
+    console.error("[nextRound] No tournament loaded.");
     return;
   }
   
@@ -131,18 +150,18 @@ async function nextRound() {
     tournament.currentRound = currentRound + 1;
     console.log("[nextRound] Setting round to:", tournament.currentRound);
     
-    await updateTournament(tournament);
-    await renderFixtures();
+    updateTournament(tournament);
+    renderFixtures();
     console.log("[nextRound] Done");
   } else {
     console.log("[nextRound] Already at max round");
   }
 }
 
-async function prevRound() {
+function prevRound() {
   console.log("[prevRound] Called");
   
-  const tournament = await getCurrentTournament(); // <- add await
+  const tournament = getCurrentTournament();
   console.log("[prevRound] Current tournament:", tournament);
   
   if (!tournament) {
@@ -162,22 +181,31 @@ async function prevRound() {
     tournament.currentRound = currentRound - 1;
     console.log("[prevRound] Setting round to:", tournament.currentRound);
     
-    await updateTournament(tournament);
-    await renderFixtures();
+    updateTournament(tournament);
+    renderFixtures();
     console.log("[prevRound] Done");
   } else {
     console.log("[prevRound] Already at round 1");
   }
 }
 
+function getCurrentRound() {
+  const tournament = getCurrentTournament();
+  return tournament?.currentRound || 1;
+}
+
+function setCurrentRound(round) {
+  const tournament = getCurrentTournament();
+  if (!tournament) return;
+  tournament.currentRound = round;
+  updateTournament(tournament);
+}
 
 
-  
 
 
 
-
-function tournamentCreator() {
+async function tournamentCreator() {
   const input = document.getElementById("tournamentNameInput");
   const formatInput = document.getElementById("tournamentFormatInput");
   const name = input.value.trim();
@@ -187,10 +215,7 @@ function tournamentCreator() {
     return;
   }
   
- 
-  const tournaments = getTournaments();
-  
-  const id = Date.now();
+  const id = Date.now().toString();
   
   const newTournament = {
     id,
@@ -212,30 +237,23 @@ function tournamentCreator() {
     }
   };
   
-
-  tournaments.push(newTournament);
-  
-  
-  saveTournaments(tournaments);
-  
-  
-  if (typeof updateTournament === "function") {
-    updateTournament(newTournament);
-  } else {
-    localStorage.setItem("tournament", JSON.stringify(newTournament));
-  }
-  
+  await saveTournament(newTournament);
   
   hideCreateTournament();
   showAlert("Tournament created!");
   
   input.value = "";
   
-  
   if (typeof renderTournamentList === "function") {
     renderTournamentList();
   }
 }
+
+
+
+
+
+
 
 function deleteTeam(index) {
   const tournament = getCurrentTournament();
@@ -520,41 +538,26 @@ document.getElementById("formToggleBtn").innerHTML = `
 
 
 
-function updateTournament(updatedTournament) {
-  let tournaments = getTournaments();
-  const index = tournaments.findIndex(t => String(t.id) === String(updatedTournament.id));
-
-  if (index !== -1) {
-    tournaments[index] = updatedTournament;
-    saveTournaments(tournaments);
-  }
-}
 
 
 
 
-
-
-
-// 1. Added async so this function can handle the live cloud download stream
 async function renderTournamentList() {
   const container = document.getElementById("tournamentList");
   if (!container) return;
   
-  container.innerHTML = "";
+  container.innerHTML = `<p class="emptyText">Loading tournaments...</p>`;
   
-  // Show a quick loading state while waiting for Firestore to talk back
-  container.innerHTML = `<p class="emptyText">Loading tournaments from cloud...</p>`;
-  
-  // 2. Added await here so it waits for the direct-from-Firestore list array
   const tournaments = await getTournaments();
   
-  // Clear the temporary loading state
   container.innerHTML = "";
   
   if (!tournaments || tournaments.length === 0) {
     container.innerHTML = `
-      <p class="emptyText">No tournaments created yet <br> Your tournament will appear here when you create one</p>
+      <p class="emptyText">
+        No tournaments created yet <br>
+        Your tournament will appear here when you create one
+      </p>
     `;
     return;
   }
@@ -563,8 +566,9 @@ async function renderTournamentList() {
     const div = document.createElement("div");
     div.className = "tournament-card";
     
-    // Explicit array state check safeguard
-    const isSelected = typeof selectedTournaments !== "undefined" && selectedTournaments.includes(tournament.id);
+    const isSelected =
+      typeof selectedTournaments !== "undefined" &&
+      selectedTournaments.includes(tournament.id);
     
     div.innerHTML = `
       ${(typeof exportMode !== "undefined" && exportMode) ? `
@@ -572,31 +576,32 @@ async function renderTournamentList() {
           ${isSelected ? "✔" : ""}
         </div>
       ` : ""}
-      <div class="tournament-format">${tournament.format || 'League'}</div>
+      <div class="tournament-format">${tournament.format || "League"}</div>
       <h3>${tournament.name}</h3>
     `;
     
     let pressTimer = null;
     let wasLongPress = false;
-    const longPressDuration = 600;
     
     const startPress = () => {
       wasLongPress = false;
+      
       pressTimer = setTimeout(() => {
         wasLongPress = true;
+        
         if (typeof deleteTournament === "function") {
           deleteTournament(tournament.id);
         }
+        
         if (navigator.vibrate) navigator.vibrate(50);
-      }, longPressDuration);
+      }, 600);
     };
     
     const cancelPress = () => clearTimeout(pressTimer);
     
     div.addEventListener("click", () => {
-      // Guard clause to ignore standard clicks if a long-press delete action just fired
-      if (wasLongPress) return; 
-
+      if (wasLongPress) return;
+      
       if (typeof exportMode !== "undefined" && exportMode) {
         if (typeof toggleSelect === "function") toggleSelect(tournament.id);
       } else {
@@ -604,12 +609,10 @@ async function renderTournamentList() {
       }
     });
     
-    // Touch event binders
     div.addEventListener("touchstart", startPress);
     div.addEventListener("touchend", cancelPress);
     div.addEventListener("touchmove", cancelPress);
     
-    // Mouse fallback event binders
     div.addEventListener("mousedown", startPress);
     div.addEventListener("mouseup", cancelPress);
     div.addEventListener("mouseleave", cancelPress);
@@ -621,17 +624,6 @@ async function renderTournamentList() {
 
 
 
-async function getCurrentRound() {
-  const tournament = await getCurrentTournament(); // <- await here
-  return tournament?.currentRound || 1;
-}
-
-async function setCurrentRound(round) {
-  const tournament = await getCurrentTournament();
-  if (!tournament) return;
-  tournament.currentRound = round;
-  await updateTournament(tournament);
-}
 
 
 
@@ -649,47 +641,6 @@ async function setCurrentRound(round) {
 
 
 
-
-
-
-
-
-// 1. Added async to handle the live Firestore document download
-async function openTournament(id) {
-  
-  showActionModal("Opening...", "success");
-
-  // 2. Clear out the old local array lookup and read directly from the cloud source instead
-  const tournament = await getCurrentTournament(); 
-
-  // Secondary structural check: if the active database pointer isn't set yet, fetch it directly
-  if (!tournament || String(tournament.id) !== String(id)) {
-    setCurrentTournamentId(id); // Set the active document pointer ID
-    const directFetch = await getCurrentTournament();
-    if (!directFetch) {
-      showAlert("Tournament not found in cloud database");
-      return;
-    }
-  }
-
-  // 3. Keep your UI routing configuration states intact
-  localStorage.setItem("currentTournamentId", id);
-  localStorage.setItem("currentTournamentFormat", tournament.format);
-  localStorage.setItem("currentTournamentName", tournament.name);
-  
-  const tournamentName = tournament.name;
- 
-  // Lowercase normalization fallback safeguard check
-  const formatType = (tournament.format || 'league').toLowerCase();
-
-  if (formatType === "league") {
-    document.getElementById("leagueName").textContent = tournamentName;
-    goToTournamentPage();  
-  } else {
-    document.getElementById("cupName").textContent = tournamentName;
-    goToCupPage();
-  }
-}
 
 
 
@@ -944,96 +895,7 @@ function resetLogoUI() {
 
 
 
-function renderTeams(containerId = "teamList") {
-  const tournament = getCurrentTournament();
-  if (!tournament) return;
-  
-  const container = document.getElementById(containerId);
-  if (!container) return;
-  
-  container.className = "CupTeamsContainer";
-  const counterLabel = document.getElementById("teamCount");
-  const teamadded = document.getElementById("teamsadded");
-  
-  container.innerHTML = "";
-  
-  if (counterLabel) {
-    counterLabel.textContent = `Total Teams Register : ${tournament.teams.length}`;
-  }
-  
-  if (teamadded) {
-    teamadded.textContent = `${tournament.teams.length}`;
-  }
-  
-  tournament.teams.forEach((team, index) => {
-    const div = document.createElement("div");
-    div.className = "team-card";
-    
-    const logo = tournament.teamLogos?.[team];
-    
-    div.innerHTML = `
-  <div class="team-swipe-wrapper">
-    
-    <div class="team-actions">
-      <button class="btn-edit" onclick="openEditTeam(${index})">Edit</button>
-      <button class="btn-delete" onclick="deleteTeam(${index})">Delete</button>
-    </div>
 
-    <div class="team-content">
-      ${
-        logo
-          ? `<img class="team-logo" src="${logo}" alt="${team}">`
-          : `<div class="team-logo-placeholder">?</div>`
-      }
-      <span>${team}</span>
-    </div>
-
-  </div>
-`;    
-    let startX = 0;
-let currentX = 0;
-let isSwiping = false;
-
-const content = div.querySelector(".team-content");
-
-const start = (x) => {
-  startX = x;
-  isSwiping = true;
-};
-
-const move = (x) => {
-  if (!isSwiping) return;
-  currentX = x;
-  let diff = currentX - startX;
-  if (diff < 0) {
-    content.style.transform = `translateX(${diff}px)`;
-  }
-};
-
-const end = () => {
-  if (!isSwiping) return;
-  isSwiping = false;
-  let diff = currentX - startX;
-  if (diff < -80) {
-    content.style.transform = "translateX(-120px)";
-  } else {
-    content.style.transform = "translateX(0)";
-  }
-};
-
-div.addEventListener("touchstart", (e) => start(e.touches[0].clientX));
-div.addEventListener("mousedown", (e) => start(e.clientX));
-
-div.addEventListener("touchmove", (e) => move(e.touches[0].clientX));
-div.addEventListener("mousemove", (e) => move(e.clientX));
-
-div.addEventListener("touchend", end);
-div.addEventListener("mouseup", end);
-div.addEventListener("mouseleave", end);
-    
-    container.appendChild(div);
-  });
-}
 
 
 
@@ -1084,26 +946,19 @@ function renderFormView() {
   sortedTable.forEach((tableRow, index) => {
     const teamName = tableRow.name;
     const form = getTeamForm(teamName);
-    const logo = tournament.teamLogos?.[teamName];
+    const logoKey = tournament.teamLogos?.[teamName];
     
     const row = document.createElement("div");
     row.className = "form-row";
+    row.setAttribute("data-index", index);
     
     row.innerHTML = `
       <div class="form-team">
-
         <span class="form-position">
           ${index + 1}
         </span>
-
-        ${
-          logo
-            ? `<img class="team-logo" src="${logo}">`
-            : `<div class="team-logo-placeholder">⚽</div>`
-        }
-
+        <div class="team-logo-placeholder">⚽</div>
         <span>${teamName}</span>
-
       </div>
 
       <div class="form-results">
@@ -1114,6 +969,19 @@ function renderFormView() {
         `).join("")}
       </div>
     `;
+    
+    if (logoKey) {
+      getLogoFromIndexedDB(logoKey).then(base64Logo => {
+        const teamSide = row.querySelector(".form-team");
+        const placeholder = teamSide?.querySelector(".team-logo-placeholder");
+        if (base64Logo && teamSide && placeholder) {
+          const img = document.createElement("img");
+          img.className = "team-logo";
+          img.src = base64Logo;
+          teamSide.replaceChild(img, placeholder);
+        }
+      }).catch(err => console.error("Error loading form view logo:", err));
+    }
     
     container.appendChild(row);
   });
@@ -1318,174 +1186,12 @@ function getLongestUnbeatenRuns(matches) {
 
 
 
-function renderTop5(containerId, data, title, suffix = "") {
-  const el = document.getElementById(containerId);
-  if (!el) return;
-  
-  const tournament = getCurrentTournament();
-  const top5 = data.slice(0, 5);
-  
-  el.innerHTML = `
-    <div class="record-card">
-
-      <div class="record-title">
-        ${title}
-      </div>
-
-      ${top5.map(([team, value], index) => {
-        const medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"];
-        const logo = tournament.teamLogos?.[team];
-
-        return `
-          <div class="record-row">
-
-            <div class="rank">
-              ${medals[index]}
-            </div>
-
-            <div class="team-side">
-              ${
-                logo
-                  ? `<img class="team-logo" src="${logo}">`
-                  : `<div class="team-logo-placeholder">?</div>`
-              }
-              <span class="team">${team}</span>
-            </div>
-
-            <div class="value">
-              ${value} ${suffix}
-            </div>
-
-          </div>
-        `;
-      }).join("")}
-
-    </div>
-  `;
-}
-
-
-function renderMatchCard(containerId, match, title, extraLabel = "") {
-  const el = document.getElementById(containerId);
-  if (!el || !match) return;
-  
-  const tournament = getCurrentTournament();
-  
-  const homeLogo = tournament.teamLogos?.[match.home];
-  const awayLogo = tournament.teamLogos?.[match.away];
-  
-  el.innerHTML = `
-  
-
-  
-  <div class="record-card hero">
-    <div class="record-title">${title}</div>
-
-
-    <div class="match-vertical">
-
-      <!-- HOME -->
-      <div class="team-row">
-        <div class="team-side">
-          ${
-            homeLogo
-              ? `<img class="team-logo" src="${homeLogo}">`
-              : `<div class="team-logo-placeholder">?</div>`
-          }
-          <span>${match.home}</span>
-        </div>
-
-        <div class="team-score">
-          <b>${match.homeGoals}</b>
-        </div>
-      </div>
-
-      <!-- AWAY -->
-      <div class="team-row">
-        <div class="team-side">
-          ${
-            awayLogo
-              ? `<img class="team-logo" src="${awayLogo}">`
-              : `<div class="team-logo-placeholder">?</div>`
-          }
-          <span>${match.away}</span>
-        </div>
-
-        <div class="team-score">
-          <b>${match.awayGoals}</b>
-        </div>
-      </div>
-
-      <!-- CENTER INFO -->
-      <div class="record-sub center">
-        ${extraLabel}
-      </div>
-
-    </div>
-  </div>
-  
-`;
-
-}
-
-
-
-function renderStreakCard(containerId, dataArray, title, suffix = "") {
-  const el = document.getElementById(containerId);
-  if (!el || !dataArray) return;
-  
-  const tournament = getCurrentTournament();
-  
-  // Normalize data: If it's a single team pair like ["Arsenal", 5], wrap it in an array
-  const normalizedData = Array.isArray(dataArray[0]) ? dataArray : [dataArray];
-  const top3 = normalizedData.slice(0, 3);
-  
-  let rowsHtml = "";
-  
-  top3.forEach((data, index) => {
-    if (!data || data.length < 2) return;
-    const [team, value] = data;
-    const logo = tournament.teamLogos?.[team];
-    const medal = index === 0 ? "🥇" : index === 1 ? "🥈" : "🥉";
-    
-    rowsHtml += `
-      <div class="streak-row" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-        <div class="team-side" style="display: flex; align-items: center; gap: 8px;">
-          <span class="medal">${medal}</span>
-          ${
-            logo
-              ? `<img class="team-logo" src="${logo}" style="width: 24px; height: 24px; object-fit: contain;">`
-              : `<div class="team-logo-placeholder">?</div>`
-          }
-          <span>${team}</span>
-        </div>
-        <div class="record-sub">
-          <b>${value}</b> ${suffix}
-        </div>
-      </div>
-    `;
-  });
-
-  el.innerHTML = `
-    <div class="record-card hero streak-card">
-      <div class="record-title" style="margin-bottom: 12px; font-weight: bold;">${title}</div>
-      <div class="streak-list">
-        ${rowsHtml}
-      </div>
-    </div>
-  `;
-}
-
-
-
-
-
 function renderRecords() {
   const tournament = getCurrentTournament();
   if (!tournament || !tournament.matches) return;
+  
   renderChampionPodium();
   const records = getRecords(tournament.matches);
-  
   
   renderTop5("bestAttack", records.bestAttack, "⚽ Top Scorers", "goals");
   
@@ -1509,7 +1215,6 @@ function renderRecords() {
     "wins"
   );
   
-  
   renderMatchCard(
     "biggestWin",
     records.biggestWins[0],
@@ -1524,7 +1229,7 @@ function renderRecords() {
     `Total Goals: ${records.highestScoringMatches[0]?.totalGoals || 0}`
   );
   
-    renderStreakCard(
+  renderStreakCard(
     "longestWinningRun",
     records.longestWinningRuns,
     "👑 Longest Winning Run",
@@ -1539,35 +1244,242 @@ function renderRecords() {
   );
 }
 
+function renderTop5(containerId, dataArray, title, suffix = "") {
+  const el = document.getElementById(containerId);
+  if (!el || !dataArray) return;
+
+  const tournament = getCurrentTournament();
+  const top5 = dataArray.slice(0, 5);
+  
+  let rowsHtml = "";
+  
+  top5.forEach((item, index) => {
+    let teamName = "";
+    let value = 0;
+    
+    if (Array.isArray(item)) {
+      [teamName, value] = item;
+    } else if (item && typeof item === "object") {
+      teamName = item.team || item.name;
+      value = item[suffix] !== undefined ? item[suffix] : item.value;
+    }
+    
+    if (!teamName) return;
+    
+    rowsHtml += `
+      <div class="top5-row item-index-${index}" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+        <div class="team-side" style="display: flex; align-items: center; gap: 8px;">
+          <span class="rank-number" style="font-weight: bold; min-width: 16px;">${index + 1}.</span>
+          <div class="team-logo-placeholder">?</div>
+          <span>${teamName}</span>
+        </div>
+        <div class="record-value" style="font-weight: bold;">
+          ${value} <span style="font-size: 0.85em; font-weight: normal; color: var(--text-muted);">${suffix}</span>
+        </div>
+      </div>
+    `;
+  });
+
+  el.innerHTML = `
+    <div class="record-card top5-card">
+      <div class="record-title" style="margin-bottom: 10px; font-weight: bold;">${title}</div>
+      <div class="top5-list">
+        ${rowsHtml}
+      </div>
+    </div>
+  `;
+
+  top5.forEach((item, index) => {
+    let teamName = Array.isArray(item) ? item[0] : (item?.team || item?.name);
+    if (!teamName) return;
+
+    const logoKey = tournament.teamLogos?.[teamName];
+
+    if (logoKey) {
+      getLogoFromIndexedDB(logoKey).then(base64Logo => {
+        const rowNode = el.querySelector(`.item-index-${index} .team-side`);
+        const placeholder = rowNode?.querySelector(".team-logo-placeholder");
+        if (base64Logo && rowNode && placeholder) {
+          const img = document.createElement("img");
+          img.className = "team-logo";
+          img.src = base64Logo;
+          img.style.width = "20px";
+          img.style.height = "20px";
+          img.style.objectFit = "contain";
+          rowNode.replaceChild(img, placeholder);
+        }
+      }).catch(err => console.error("Error loading top 5 row logo:", err));
+    }
+  });
+}
+
+function renderMatchCard(containerId, match, title, extraLabel = "") {
+  const el = document.getElementById(containerId);
+  if (!el || !match) return;
+  
+  const tournament = getCurrentTournament();
+  
+  const homeLogoKey = tournament.teamLogos?.[match.home];
+  const awayLogoKey = tournament.teamLogos?.[match.away];
+  
+  el.innerHTML = `
+    <div class="record-card hero">
+      <div class="record-title">${title}</div>
+
+      <div class="match-vertical">
+
+        <div class="team-row card-home-container">
+          <div class="team-side">
+            <div class="team-logo-placeholder">?</div>
+            <span>${match.home}</span>
+          </div>
+
+          <div class="team-score">
+            <b>${match.homeGoals}</b>
+          </div>
+        </div>
+
+        <div class="team-row card-away-container">
+          <div class="team-side">
+            <div class="team-logo-placeholder">?</div>
+            <span>${match.away}</span>
+          </div>
+
+          <div class="team-score">
+            <b>${match.awayGoals}</b>
+          </div>
+        </div>
+
+        <div class="record-sub center">
+          ${extraLabel}
+        </div>
+
+      </div>
+    </div>
+  `;
+
+  if (homeLogoKey) {
+    getLogoFromIndexedDB(homeLogoKey).then(base64Logo => {
+      const homeRow = el.querySelector(".card-home-container .team-side");
+      const placeholder = homeRow?.querySelector(".team-logo-placeholder");
+      if (base64Logo && homeRow && placeholder) {
+        const img = document.createElement("img");
+        img.className = "team-logo";
+        img.src = base64Logo;
+        homeRow.replaceChild(img, placeholder);
+      }
+    }).catch(err => console.error("Error loading match card home logo:", err));
+  }
+
+  if (awayLogoKey) {
+    getLogoFromIndexedDB(awayLogoKey).then(base64Logo => {
+      const awayRow = el.querySelector(".card-away-container .team-side");
+      const placeholder = awayRow?.querySelector(".team-logo-placeholder");
+      if (base64Logo && awayRow && placeholder) {
+        const img = document.createElement("img");
+        img.className = "team-logo";
+        img.src = base64Logo;
+        awayRow.replaceChild(img, placeholder);
+      }
+    }).catch(err => console.error("Error loading match card away logo:", err));
+  }
+}
+
+function renderStreakCard(containerId, dataArray, title, suffix = "") {
+  const el = document.getElementById(containerId);
+  if (!el || !dataArray) return;
+  
+  const tournament = getCurrentTournament();
+  
+  const normalizedData = Array.isArray(dataArray[0]) ? dataArray : [dataArray];
+  const top3 = normalizedData.slice(0, 3);
+  
+  let rowsHtml = "";
+  
+  top3.forEach((data, index) => {
+    if (!data || data.length < 2) return;
+    const [team, value] = data;
+    const medal = index === 0 ? "🥇" : index === 1 ? "🥈" : "🥉";
+    
+    rowsHtml += `
+      <div class="streak-row streak-row-item-${index}" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+        <div class="team-side" style="display: flex; align-items: center; gap: 8px;">
+          <span class="medal">${medal}</span>
+          <div class="team-logo-placeholder">?</div>
+          <span>${team}</span>
+        </div>
+        <div class="record-sub">
+          <b>${value}</b> ${suffix}
+        </div>
+      </div>
+    `;
+  });
+
+  el.innerHTML = `
+    <div class="record-card hero streak-card">
+      <div class="record-title" style="margin-bottom: 12px; font-weight: bold;">${title}</div>
+      <div class="streak-list">
+        ${rowsHtml}
+      </div>
+    </div>
+  `;
+
+  top3.forEach((data, index) => {
+    if (!data || data.length < 2) return;
+    const [team] = data;
+    const logoKey = tournament.teamLogos?.[team];
+
+    if (logoKey) {
+      getLogoFromIndexedDB(logoKey).then(base64Logo => {
+        const rowNode = el.querySelector(`.streak-row-item-${index} .team-side`);
+        const placeholder = rowNode?.querySelector(".team-logo-placeholder");
+        if (base64Logo && rowNode && placeholder) {
+          const img = document.createElement("img");
+          img.className = "team-logo";
+          img.src = base64Logo;
+          img.style.width = "24px";
+          img.style.height = "24px";
+          img.style.objectFit = "contain";
+          rowNode.replaceChild(img, placeholder);
+        }
+      }).catch(err => console.error("Error loading streak row logo:", err));
+    }
+  });
+}
+
+
+
+
+
+
+
+
+
 function rebuildTableFromMatches() {
   const tournament = getCurrentTournament();
   if (!tournament) return;
-  
   
   const teams = tournament.teams || [];
   const matches = tournament.matches || [];
   
   const table = {};
   
-  
   teams.forEach(team => {
     table[team] = {
       name: team,
-      p: 0,
-      w: 0,
-      d: 0,
-      l: 0,
+      played: 0,
+      wins: 0,
+      draws: 0,
+      losses: 0,
       gf: 0,
       ga: 0,
-      pts: 0
+      points: 0
     };
   });
-  
   
   matches.forEach(match => {
     if (!match || !match.played) return;
     if (!table[match.home] || !table[match.away]) return;
-    
     
     const hg = Number(match.homeGoals ?? match.homeScore ?? 0);
     const ag = Number(match.awayGoals ?? match.awayScore ?? 0);
@@ -1575,32 +1487,31 @@ function rebuildTableFromMatches() {
     const home = table[match.home];
     const away = table[match.away];
     
-    home.p++;
-    away.p++;
+    home.played++;
+    away.played++;
     home.gf += hg;
     home.ga += ag;
     away.gf += ag;
     away.ga += hg;
     
     if (hg > ag) {
-      home.w++;
-      home.pts += 3;
-      away.l++;
+      home.wins++;
+      home.points += 3;
+      away.losses++;
     } else if (ag > hg) {
-      away.w++;
-      away.pts += 3;
-      home.l++;
+      away.wins++;
+      away.points += 3;
+      home.losses++;
     } else {
-      home.d++;
-      away.d++;
-      home.pts += 1;
-      away.pts += 1;
+      home.draws++;
+      away.draws++;
+      home.points += 1;
+      away.points += 1;
     }
   });
   
-  
   const sortedTable = Object.values(table).sort((a, b) => {
-    if (b.pts !== a.pts) return b.pts - a.pts;
+    if (b.points !== a.points) return b.points - a.points;
     const gdA = a.gf - a.ga;
     const gdB = b.gf - b.ga;
     if (gdB !== gdA) return gdB - gdA;
@@ -1610,12 +1521,10 @@ function rebuildTableFromMatches() {
   tournament.table = sortedTable;
   updateTournament(tournament);
   
-  // Render it
   if (typeof renderTable === "function") {
     renderTable(tournament.table);
   }
 }
-
 
 function renderTable(data = []) {
   const tbody = document.getElementById("tableBody");
@@ -1630,15 +1539,18 @@ function renderTable(data = []) {
   
   data.forEach((team, index) => {
     const tr = document.createElement("tr");
+    tr.setAttribute("data-row-index", index);
     
-    // Fallback logic to calculate Goal Difference correctly
     const gd = (team.gf || 0) - (team.ga || 0);
     const gdClass = gd < 0 ? 'neg' : '';
-    
-    // FIX: Swapped out abbreviated properties (.p, .w, etc.) for your actual database keys
+       
     tr.innerHTML = `
       <td>${index + 1}</td>
-      <td><strong>${team.name || ''}</strong></td>
+      <td>
+        <div class="table-team-cell">
+          <strong>${team.name || ''}</strong>
+        </div>
+      </td>
       <td>${team.played || 0}</td>
       <td>${team.wins || 0}</td>
       <td>${team.draws || 0}</td>

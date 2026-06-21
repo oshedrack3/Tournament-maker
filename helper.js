@@ -151,28 +151,52 @@ function removeTournament(id) {
   localStorage.setItem("tournaments", JSON.stringify(tournaments));
 }
 
-function deleteTournament(id) {
+async function removeTournament(id) {
+  const idStr = String(id).trim();
+  const activeUser = auth.currentUser;
+  if (!activeUser) return;
+  
+  try {
+    // Delete from Firestore
+    const ref = doc(db, "users", activeUser.uid, "tournaments", idStr);
+    await deleteDoc(ref);
+    
+    // Remove from memory
+    allTournaments = allTournaments.filter(t => t.id !== idStr);
+    
+    // If deleted tournament was active, clear it
+    if (currentTournament && currentTournament.id === idStr) {
+      if (unsubscribeTournament) unsubscribeTournament();
+      currentTournament = null;
+      localStorage.removeItem("currentTournamentId");
+    }
+    
+    console.log("[FIRESTORE] Deleted tournament:", idStr);
+  } catch (err) {
+    console.error("[FIRESTORE] Delete failed:", err);
+    showAlert("Failed to delete tournament: " + err.message);
+  }
+}
+
+async function deleteTournament(id) {
   const tournaments = getAllTournaments();
-  const tournament = tournaments.find(t => t.id === id);
+  const tournament = tournaments.find(t => t.id === String(id));
   
   if (!tournament) {
     showAlert("Tournament not found.");
     return;
   }
   
-  
   showConfirmModal(
     `Delete "${tournament.name}" permanently? This cannot be undone.`,
-    () => {
-      removeTournament(id);
-    showActionModal("❌ Tournament Deleted", "delete");
-      renderTournamentList(); 
-      
+    async () => {
+      await removeTournament(id);
+      showActionModal("❌ Tournament Deleted", "delete");
+      renderTournamentList();
+      if (typeof renderFixtures === "function") renderFixtures();
     }
   );
 }
-
-
 
 function showCreateTournament() {
   document.getElementById("createTour").style.display = "block";
@@ -540,10 +564,19 @@ toggleCupSetUpView("teams")
 
 function handleImport(event) {
   const file = event.target.files[0];
-  if (file) {
-    importTournaments(file);
-  }
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    if (e.target?.result) {
+      await importTournamentsData(e.target.result);
+    }
+    event.target.value = "";
+  };
+  reader.readAsText(file);
 }
+
+
 
 
 
@@ -589,7 +622,7 @@ function toggleSelect(id) {
 
 
 
-function exportSelectedTournaments() {
+async function exportSelectedTournaments() {
   const tournaments = getTournaments();
 
   const selected = tournaments.filter(t =>
@@ -601,8 +634,34 @@ function exportSelectedTournaments() {
     return;
   }
 
+  // Deep clone the selected data so we don't accidentally pollute our current runtime state
+  const exportData = JSON.parse(JSON.stringify(selected));
+
+  // Loop through the clone and embed the real base64 images from IndexedDB
+  for (const tournament of exportData) {
+    if (tournament.teamLogos) {
+      const teams = Object.keys(tournament.teamLogos);
+      for (const team of teams) {
+        const logoKey = tournament.teamLogos[team];
+        
+        // If it is an IndexedDB tracking key, grab the raw image text string
+        if (logoKey && !logoKey.startsWith("data:image")) {
+          try {
+            const base64Data = await getLogoFromIndexedDB(logoKey);
+            if (base64Data) {
+              // Temporarily pack the heavy image data back into the exported map
+              tournament.teamLogos[team] = base64Data;
+            }
+          } catch (err) {
+            console.error(`Failed to package logo for team ${team}:`, err);
+          }
+        }
+      }
+    }
+  }
+
   const blob = new Blob(
-    [JSON.stringify(selected, null, 2)],
+    [JSON.stringify(exportData, null, 2)],
     { type: "application/json" }
   );
 
@@ -625,7 +684,6 @@ function exportSelectedTournaments() {
   exitExportMode();
 }
 
-
 function fallbackDownload(file) {
   const url = URL.createObjectURL(file);
   
@@ -641,7 +699,6 @@ function fallbackDownload(file) {
   
   showAlert("File downloaded");
 }
-
 
 
 
@@ -692,6 +749,79 @@ function closeListModal() {
   if (modal) modal.style.display = "none";
 }
 
+
+async function importTournamentsData(jsonString) {
+  try {
+    const importedData = JSON.parse(jsonString);
+    if (!importedData) {
+      showAlert("Invalid backup file structure");
+      return;
+    }
+
+    const tournamentsList = Array.isArray(importedData) ? importedData : [importedData];
+    const existingTournaments = getTournaments();
+    
+    let successCount = 0;
+
+    for (const tournament of tournamentsList) {
+      if (!tournament.id || !tournament.name) continue;
+
+      const duplicateIndex = existingTournaments.findIndex(t => String(t.id) === String(tournament.id));
+      if (duplicateIndex !== -1) continue;
+
+      if (tournament.teamLogos) {
+        const teams = Object.keys(tournament.teamLogos);
+        
+        for (const team of teams) {
+          const logoData = tournament.teamLogos[team];
+          
+          if (logoData && (logoData.startsWith("data:image") || logoData.length > 100)) {
+            const logoKey = `logo_${tournament.id}_${team.replace(/\s+/g, '_')}`;
+            
+            try {
+              await saveLogoToIndexedDB(logoKey, logoData);
+              tournament.teamLogos[team] = logoKey;
+            } catch (dbErr) {
+              tournament.teamLogos[team] = null;
+            }
+          } else {
+            tournament.teamLogos[team] = null;
+          }
+        }
+      }
+
+      existingTournaments.push(tournament);
+      successCount++;
+    }
+
+    if (successCount > 0) {
+      localStorage.setItem("tournaments", JSON.stringify(existingTournaments));
+      showAlert(`Successfully imported ${successCount} tournament(s)!`);
+      
+      if (typeof renderTournamentList === "function") renderTournamentList();
+      if (typeof renderTeams === "function") renderTeams();
+    } else {
+      showAlert("No new or unique tournaments were imported.");
+    }
+
+  } catch (err) {
+    showAlert("Failed to interpret data file structure.");
+  }
+}
+
+function handleTournamentFileImport(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    await importTournamentsData(e.target.result);
+    event.target.value = "";
+  };
+  reader.readAsText(file);
+}
+
+
 function importTeams() {
   const currentId = localStorage.getItem("currentTournamentId");
   
@@ -732,9 +862,8 @@ document.addEventListener("click", function(e) {
   importAllTeamsFromTournament(sourceId);
 });
 
-function importAllTeamsFromTournament(sourceId) {
+async function importAllTeamsFromTournament(sourceId) {
   const current = getCurrentTournament();
-  
   const source = getTournaments().find(
     t => String(t.id) === String(sourceId)
   );
@@ -747,31 +876,52 @@ function importAllTeamsFromTournament(sourceId) {
   current.teams = current.teams || [];
   current.teamLogos = current.teamLogos || {};
   
-  let imported = 0;
+  let importedCount = 0;
+  const importPromises = [];
   
   source.teams.forEach(team => {
     if (!current.teams.includes(team)) {
       current.teams.push(team);
       
-      if (source.teamLogos?.[team]) {
-        current.teamLogos[team] = source.teamLogos[team];
+      const sourceLogoKey = source.teamLogos?.[team];
+      
+      if (sourceLogoKey) {
+        // Create a distinct, isolated key for the current tournament destination
+        const currentLogoKey = `logo_${current.id}_${team.replace(/\s+/g, '_')}`;
+        current.teamLogos[team] = currentLogoKey;
+        
+    
+        const promise = getLogoFromIndexedDB(sourceLogoKey)
+          .then(base64Data => {
+            if (base64Data) {
+              return saveLogoToIndexedDB(currentLogoKey, base64Data);
+            }
+          })
+          .catch(err => console.error(`Failed to migrate logo for ${team}:`, err));
+          
+        importPromises.push(promise);
       }
       
-      imported++;
+      importedCount++;
     }
   });
   
-  updateTournament(current);
-  
-  closeListModal();
-  
-  showAlert(`${imported} team(s) imported`);
-  
-  if (typeof renderTeams === "function") {
-    renderTeams();
+  try {
+ 
+    await Promise.all(importPromises);
+    
+    updateTournament(current);
+    closeListModal();
+    showAlert(`${importedCount} team(s) imported securely`);
+    
+    if (typeof renderTeams === "function") {
+      renderTeams();
+    }
+  } catch (err) {
+    console.error("Error finalizing team import:", err);
+    showAlert("Failed to safely import team logos");
   }
 }
-
 
 
 function removeBackground(file, callback) {
@@ -844,11 +994,10 @@ document.getElementById("editLogoInput").addEventListener("change", function(e) 
 });
 
 
-
-function saveEdit() {
+async function saveEdit() {
   const tournament = getCurrentTournament();
   if (!tournament || editingIndex === null) {
-    showAlert( "Something went wrong. Please try again");
+    showAlert("Something went wrong. Please try again");
     return;
   }
   
@@ -862,7 +1011,7 @@ function saveEdit() {
   }
   
   if (newName !== oldName && tournament.teams.includes(newName)) {
-    showAlert ("A team with this name already exists");
+    showAlert("A team with this name already exists");
     return;
   }
   
@@ -875,35 +1024,44 @@ function saveEdit() {
   tournament.teams[editingIndex] = newName;
   
   const updateMatches = (arr) => {
-  if (!Array.isArray(arr)) return;
-  arr.forEach((match) => {
-    if (!match) return;
-    
-    // Update object.name if it matches oldName
-    if (match.home && typeof match.home === 'object' && match.home.name === oldName) {
-      match.home.name = newName;
-    }
-    if (match.away && typeof match.away === 'object' && match.away.name === oldName) {
-      match.away.name = newName;
-    }
-    
-    // Keep this for group/legacy matches that use strings
-    if (match.home === oldName) match.home = newName;
-    if (match.away === oldName) match.away = newName;
-  });
-}; 
+    if (!Array.isArray(arr)) return;
+    arr.forEach((match) => {
+      if (!match) return;
+      
+      if (match.home && typeof match.home === 'object' && match.home.name === oldName) {
+        match.home.name = newName;
+      }
+      if (match.away && typeof match.away === 'object' && match.away.name === oldName) {
+        match.away.name = newName;
+      }
+      
+      if (match.home === oldName) match.home = newName;
+      if (match.away === oldName) match.away = newName;
+    });
+  }; 
 
   updateMatches(tournament.matches);
   updateMatches(tournament.groupMatches);
   updateMatches(tournament.knockoutMatches);
   
-  if (fileInput.files && fileInput.files[0]) {
+  if (fileInput && fileInput.files && fileInput.files[0]) {
     const file = fileInput.files[0];
     const reader = new FileReader();
     
-    reader.onload = (e) => {
-      tournament.teamLogos[newName] = e.target.result;
-      handleSave(tournament, newName, oldName);
+    reader.onload = async (e) => {
+      if (e.target?.result) {
+        const logoKey = `logo_${tournament.id}_${newName.replace(/\s+/g, '_')}`;
+        try {
+          await saveLogoToIndexedDB(logoKey, e.target.result);
+          tournament.teamLogos[newName] = logoKey;
+          if (newName !== oldName && tournament.teamLogos[oldName]) {
+            delete tournament.teamLogos[oldName];
+          }
+        } catch (dbErr) {
+          tournament.teamLogos[newName] = e.target.result;
+        }
+      }
+      await handleSave(tournament, newName, oldName);
     };
     
     reader.onerror = () => {
@@ -912,13 +1070,39 @@ function saveEdit() {
     
     reader.readAsDataURL(file);
   } else {
-    handleSave(tournament, newName, oldName);
+    await handleSave(tournament, newName, oldName);
   }
 }
 
-function handleSave(tournament, newName, oldName) {
+
+
+
+
+
+
+async function handleSave(tournament, newName, oldName) {
   if (newName !== oldName && tournament.teamLogos && tournament.teamLogos[oldName]) {
-    tournament.teamLogos[newName] = tournament.teamLogos[oldName];
+    const oldLogoKey = tournament.teamLogos[oldName];
+    const newLogoKey = `logo_${tournament.id}_${newName.replace(/\s+/g, '_')}`;
+
+    if (oldLogoKey && !oldLogoKey.startsWith("data:image")) {
+      try {
+        const base64Data = await getLogoFromIndexedDB(oldLogoKey);
+        if (base64Data) {
+          await saveLogoToIndexedDB(newLogoKey, base64Data);
+          
+          const db = await openLogoDB();
+          const tx = db.transaction("logos", "readwrite");
+          tx.objectStore("logos").delete(oldLogoKey);
+        }
+        tournament.teamLogos[newName] = newLogoKey;
+      } catch (err) {
+        tournament.teamLogos[newName] = oldLogoKey;
+      }
+    } else {
+      tournament.teamLogos[newName] = oldLogoKey;
+    }
+    
     delete tournament.teamLogos[oldName];
   }
   
@@ -929,42 +1113,15 @@ function handleSave(tournament, newName, oldName) {
     return;
   }
   
-  
-  
   try {
-  if (document.getElementById("teamList")) renderTeams("teamList");
-  if (document.getElementById("cupTeamsContainer")) renderTeams("cupTeamsContainer");
-  
-  rebuildTableFromMatches();
-  if (typeof renderFixtures === "function") renderFixtures();
-  if (typeof renderFullBracket === "function") renderFullBracket();
-} catch (e) {
-  console.error(e);
-  showActionModal("Team saved but something went wrong", "delete");
-  return;
-}
-
-  closeEditModal();
-  showActionModal("Team updated successfully", "success");
-}function handleSave(tournament, newName, oldName) {
-  if (newName !== oldName && tournament.teamLogos && tournament.teamLogos[oldName]) {
-    tournament.teamLogos[newName] = tournament.teamLogos[oldName];
-    delete tournament.teamLogos[oldName];
-  }
-  
-  try {
-    updateTournament(tournament);
-  } catch (e) {
-    showActionModal("Failed to save changes. Please try again", "delete");
-    return;
-  }
-  
-  try {
-    renderTeams();
+    if (document.getElementById("teamList")) renderTeams("teamList");
+    if (document.getElementById("cupTeamsContainer")) renderTeams("cupTeamsContainer");
+    
     rebuildTableFromMatches();
     if (typeof renderFixtures === "function") renderFixtures();
     if (typeof renderFullBracket === "function") renderFullBracket();
   } catch (e) {
+    console.error(e);
     showActionModal("Team saved but something went wrong", "delete");
     return;
   }
@@ -972,6 +1129,7 @@ function handleSave(tournament, newName, oldName) {
   closeEditModal();
   showActionModal("Team updated successfully", "success");
 }
+
 
 async function shareTable() {
   const wrapper = document.querySelector('.table-wrapper');

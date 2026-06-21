@@ -239,52 +239,70 @@ function renderCupFixtures() {
 
       <div class="groupMatches">
         ${matches.map((match, i) => {
-          const homeLogo = tournament.teamLogos?.[match.home];
-          const awayLogo = tournament.teamLogos?.[match.away];
+          return `
+            <div class="fixture-row" data-index="${i}">
+              <div class="fixture-row-content">
+                <div class="fixture-teams-stack">
+                  <div class="team-row-item team-home-${group.name.replace(/\s+/g, '')}-${i}">
+                    <div class="fixture-team-logo-placeholder">?</div>
+                    <span class="fixture-team-name">${match.home}</span>
+                  </div>
+                  
+                  <div class="team-row-item team-away-${group.name.replace(/\s+/g, '')}-${i}">
+                    <div class="fixture-team-logo-placeholder">?</div>
+                    <span class="fixture-team-name">${match.away}</span>
+                  </div>
+                </div>
 
-                    return `
-                    
-          <div class="fixture-row" data-index="${i}">
-    <div class="fixture-row-content">
-    <div class="fixture-teams-stack">
-      
-      <div class="team-row-item">
-        ${homeLogo
-          ? `<img class="fixture-team-logo" src="${homeLogo}">`
-          : `<div class="fixture-team-logo-placeholder">?</div>`
-        }
-        <span class="fixture-team-name">${match.home}</span>
+                <div class="fixture-status-pane">
+                  ${match.played 
+                    ? `
+                      <div class="score-stack">
+                        <span class="score-badge played">${match.homeGoals}</span>
+                        <span class="score-badge played">${match.awayGoals}</span>
+                      </div>
+                    `
+                    : `<span class="vs-text-alt">VS</span>`
+                  }
+                </div>
+              </div>
+            </div>
+          `;
+        }).join("")}
       </div>
-      
-      <div class="team-row-item">
-        ${awayLogo
-          ? `<img class="fixture-team-logo" src="${awayLogo}">`
-          : `<div class="fixture-team-logo-placeholder">?</div>`
-        }
-        <span class="fixture-team-name">${match.away}</span>
-      </div>
-      
-    </div>
+    `;
+   
+    matches.forEach((match, i) => {
+      const homeLogoKey = tournament.teamLogos?.[match.home];
+      const awayLogoKey = tournament.teamLogos?.[match.away];
+      const groupClean = group.name.replace(/\s+/g, '');
 
-    <div class="fixture-status-pane">
-      ${match.played 
-        ? `
-          <div class="score-stack">
-            <span class="score-badge played">${match.homeGoals}</span>
-            <span class="score-badge played">${match.awayGoals}</span>
-          </div>
-        `
-        : `<span class="vs-text-alt">VS</span>`
+      if (homeLogoKey) {
+        getLogoFromIndexedDB(homeLogoKey).then(base64Logo => {
+          const homeRow = groupCard.querySelector(`.team-home-${groupClean}-${i}`);
+          const placeholder = homeRow?.querySelector(".fixture-team-logo-placeholder");
+          if (base64Logo && homeRow && placeholder) {
+            const img = document.createElement("img");
+            img.className = "fixture-team-logo";
+            img.src = base64Logo;
+            homeRow.replaceChild(img, placeholder);
+          }
+        }).catch(err => console.error("Error loading cup home logo:", err));
       }
-    </div>
-</div>
-  </div>
-`;
-}).join("")}
-</div>
-`;
-   
-   
+
+      if (awayLogoKey) {
+        getLogoFromIndexedDB(awayLogoKey).then(base64Logo => {
+          const awayRow = groupCard.querySelector(`.team-away-${groupClean}-${i}`);
+          const placeholder = awayRow?.querySelector(".fixture-team-logo-placeholder");
+          if (base64Logo && awayRow && placeholder) {
+            const img = document.createElement("img");
+            img.className = "fixture-team-logo";
+            img.src = base64Logo;
+            awayRow.replaceChild(img, placeholder);
+          }
+        }).catch(err => console.error("Error loading cup away logo:", err));
+      }
+    });
     
     groupCard.addEventListener("click", e => {
       const row = e.target.closest(".fixture-row");
@@ -299,6 +317,8 @@ function renderCupFixtures() {
     container.appendChild(groupCard);
   });
 }
+
+
 
 
 function toggleCupView(view) {
@@ -571,7 +591,169 @@ function generateGroupStage(
 
 
 
+function renderFullBracket() {
+  const tournament = getCurrentTournament();
+  if (!tournament) return;
+  
+  const bracketContainer =
+    document.getElementById("bracket-container") ||
+    document.querySelector(".bracket-layout");
+  
+  if (!bracketContainer) return;
+  
+  const matches = tournament.knockoutMatches || [];
+  
+  if (!matches.length) {
+    bracketContainer.innerHTML = `
+      <p class="emptyText"> Group Stage in Progress......<br> Knockout Stage Matches Will be generated once Group stage matches are completed</p>
+    `;
+    return;
+  }
+  
+  const knockoutSize = tournament.settings.knockoutSize;
+  bracketContainer.innerHTML = "";
+  
+  const getTeamName = (team) => {
+    if (!team || team === "BYE") return "Awaiting Winner";
+    if (typeof team === "string") return team;
+    return team.name || "Awaiting Winner";
+  };
+  
+  let currentRoundSize = knockoutSize;
+  let roundIndex = 1;
+  
+  while (currentRoundSize >= 2) {
+    const totalMatches = currentRoundSize / 2;
+    
+    const roundName =
+      currentRoundSize === 8 ? "Quarter-Finals" :
+      currentRoundSize === 4 ? "Semi-Finals" :
+      currentRoundSize === 2 ? "Final" :
+      `Round of ${currentRoundSize}`;
+    
+    const column = document.createElement("div");
+    column.className = "bracket-column";
+    
+    const title = document.createElement("h4");
+    title.className = "round-title";
+    title.innerText = roundName;
+    column.appendChild(title);
+    
+    for (let slot = 0; slot < totalMatches; slot++) {
+      const match = matches.find(m =>
+        m.roundIndex === roundIndex &&
+        m.slot === slot
+      );
+      
+      const homeName = getTeamName(match?.home);
+      const awayName = getTeamName(match?.away);
+      
+      const homeScore = match?.homeGoals;
+      const awayScore = match?.awayGoals;
+      
+      const isPending = !match ||
+        !match.played ||
+        homeName === "Awaiting Winner" ||
+        awayName === "Awaiting Winner";
+      
+      const card = document.createElement("div");
+      card.className = "match-card";
+      
+      if (isPending) {
+        card.classList.add("pending-match");
+      }
+      
+      const homeLogoKey = tournament.teamLogos?.[homeName];
+      const awayLogoKey = tournament.teamLogos?.[awayName];
 
+      card.innerHTML = `
+        <div class="team-row home-row">
+          <div class="team-side">
+            <div class="fixture-team-logo-placeholder">?</div>
+            <span class="team-name">${homeName}</span>
+          </div>
+          <span class="score-value">
+            ${typeof homeScore === "number" ? homeScore : ""}
+          </span>
+        </div>
+
+        ${typeof homeScore !== "number" && typeof awayScore !== "number" 
+          ? `<div class="vs-container"><span class="Kvs-text">VS</span></div>` 
+          : ""
+        }
+
+        <div class="team-row away-row">
+          <div class="team-side">
+            <div class="fixture-team-logo-placeholder">?</div>
+            <span class="team-name">${awayName}</span>
+          </div>
+          <span class="score-value">
+            ${typeof awayScore === "number" ? awayScore : ""}
+          </span>
+        </div>
+      `;
+
+      if (homeLogoKey && homeName !== "Awaiting Winner") {
+        getLogoFromIndexedDB(homeLogoKey).then(base64Logo => {
+          const homeSide = card.querySelector(".home-row .team-side");
+          const placeholder = homeSide?.querySelector(".fixture-team-logo-placeholder");
+          if (base64Logo && homeSide && placeholder) {
+            const img = document.createElement("img");
+            img.className = "fixture-team-logo";
+            img.src = base64Logo;
+            homeSide.replaceChild(img, placeholder);
+          }
+        }).catch(err => console.error("Error loading bracket home logo:", err));
+      }
+
+      if (awayLogoKey && awayName !== "Awaiting Winner") {
+        getLogoFromIndexedDB(awayLogoKey).then(base64Logo => {
+          const awaySide = card.querySelector(".away-row .team-side");
+          const placeholder = awaySide?.querySelector(".fixture-team-logo-placeholder");
+          if (base64Logo && awaySide && placeholder) {
+            const img = document.createElement("img");
+            img.className = "fixture-team-logo";
+            img.src = base64Logo;
+            awaySide.replaceChild(img, placeholder);
+          }
+        }).catch(err => console.error("Error loading bracket away logo:", err));
+      }
+
+      card.addEventListener("click", () => {
+        if (!match) return;
+        openCupResultRecord(match);
+      });
+      
+      column.appendChild(card);
+    }
+    
+    bracketContainer.appendChild(column);
+    currentRoundSize /= 2;
+    roundIndex++;
+  }
+  
+  const finalMatch = matches.find(m => m.roundIndex === roundIndex - 1);
+  let champion = "TBD";
+  
+  if (finalMatch?.played) {
+    const home = getTeamName(finalMatch.home);
+    const away = getTeamName(finalMatch.away);
+    champion = (finalMatch.homeGoals > finalMatch.awayGoals) ? home : away;
+  }
+  
+  const finalBox = document.createElement("div");
+  finalBox.className = "champion-box-container";
+  
+  finalBox.innerHTML = `
+    <div class="champion-icon">🏆</div>
+    <h4 class="champion-title">CHAMPION</h4>
+    <div class="champion-display-box">
+      ${champion}
+    </div>
+  `;
+  
+  bracketContainer.appendChild(finalBox);
+}
 
 
 
@@ -1046,171 +1228,6 @@ function toggleCupSetUpView() {
 }
 
 
-
-function renderFullBracket() {
-  
-  const tournament = getCurrentTournament();
-  if (!tournament) return;
-  
-  const bracketContainer =
-    document.getElementById("bracket-container") ||
-    document.querySelector(".bracket-layout");
-  
-  if (!bracketContainer) return;
-  
-  const matches = tournament.knockoutMatches || [];
-  
-  if (!matches.length) {
-    bracketContainer.innerHTML = `
-    
-      <p class="emptyText"> Group Stage in Progress......<br> Knockout Stage Matches Will be generated once Group stage matches are completed</p>
-    `;
-    return;
-  }
-  
-  const knockoutSize = tournament.settings.knockoutSize;
-  
-  bracketContainer.innerHTML = "";
-  
-  const getTeamName = (team) => {
-    if (!team || team === "BYE") return "Awaiting Winner";
-    if (typeof team === "string") return team;
-    return team.name || "Awaiting Winner";
-  };
-  
-  let currentRoundSize = knockoutSize;
-  let roundIndex = 1;
-  
-  while (currentRoundSize >= 2) {
-    
-    const totalMatches = currentRoundSize / 2;
-    
-    const roundName =
-      currentRoundSize === 8 ? "Quarter-Finals" :
-      currentRoundSize === 4 ? "Semi-Finals" :
-      currentRoundSize === 2 ? "Final" :
-      `Round of ${currentRoundSize}`;
-    
-    const column = document.createElement("div");
-    column.className = "bracket-column";
-    
-    const title = document.createElement("h4");
-    title.className = "round-title";
-    title.innerText = roundName;
-    column.appendChild(title);
-    
-    for (let slot = 0; slot < totalMatches; slot++) {
-      
-      const match = matches.find(m =>
-        m.roundIndex === roundIndex &&
-        m.slot === slot
-      );
-      
-      const homeName = getTeamName(match?.home);
-      const awayName = getTeamName(match?.away);
-      
-      const homeScore = match?.homeGoals;
-      const awayScore = match?.awayGoals;
-      
-      const isPending = !match ||
-        !match.played ||
-        homeName === "Awaiting Winner" ||
-        awayName === "Awaiting Winner";
-      
-      const score =
-        typeof homeScore === "number" &&
-        typeof awayScore === "number" ?
-        `${homeScore} - ${awayScore}` :
-        "VS";
-      
-      const card = document.createElement("div");
-      card.className = "match-card";
-      
-      if (isPending) {
-        card.classList.add("pending-match");
-      }
-      
-      const homeLogo = tournament.teamLogos?.[homeName];
-const awayLogo = tournament.teamLogos?.[awayName];
-
-card.innerHTML = `
-
-  <div class="team-row home-row">
-    <div class="team-side">
-      ${homeLogo
-        ? `<img class="fixture-team-logo" src="${homeLogo}">`
-        : `<div class="fixture-team-logo-placeholder">?</div>`
-      }
-      <span class="team-name">${homeName}</span>
-    </div>
-    <span class="score-value">
-      ${typeof homeScore === "number" ? homeScore : ""}
-    </span>
-  </div>
-
-  ${typeof homeScore !== "number" && typeof awayScore !== "number" 
-    ? `<div class="vs-container"><span class="Kvs-text">VS</span></div>` 
-    : ""
-  }
-
-  <div class="team-row away-row">
-    <div class="team-side">
-      ${awayLogo
-        ? `<img class="fixture-team-logo" src="${awayLogo}">`
-        : `<div class="fixture-team-logo-placeholder">?</div>`
-      }
-      <span class="team-name">${awayName}</span>
-    </div>
-    <span class="score-value">
-      ${typeof awayScore === "number" ? awayScore : ""}
-    </span>
-  </div>
-`;
-
-card.addEventListener("click", () => {
-        if (!match) return;
-        openCupResultRecord(match);
-      });
-      
-      column.appendChild(card);
-    }
-    
-    bracketContainer.appendChild(column);
-    
-    currentRoundSize /= 2;
-    roundIndex++;
-  }
-  
-  // 🏆 FINAL CHAMPION BOX (SAFE)
-  const finalMatch =
-    matches.find(m => m.roundIndex === roundIndex - 1);
-  
-  let champion = "TBD";
-  
-  if (finalMatch?.played) {
-    
-    const home = getTeamName(finalMatch.home);
-    const away = getTeamName(finalMatch.away);
-    
-    champion =
-      (finalMatch.homeGoals > finalMatch.awayGoals) ?
-      home :
-      away;
-  }
-  
-  const finalBox = document.createElement("div");
-  finalBox.className = "champion-box-container";
-  
-  finalBox.innerHTML = `
-    <div class="champion-icon">🏆</div>
-    <h4 class="champion-title">CHAMPION</h4>
-    <div class="champion-display-box">
-      ${champion}
-    </div>
-  `;
-  
-  bracketContainer.appendChild(finalBox);
-}
 
 
 
