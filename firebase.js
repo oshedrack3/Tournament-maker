@@ -1,9 +1,12 @@
+
+
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { 
-  getAuth, 
-  signInWithEmailAndPassword, 
-  onAuthStateChanged 
+import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -44,7 +47,6 @@ if (signInBtn) {
   });
 }
 
-// Function to trigger a physical browser download of your data
 function exportTournamentsToFile(rawData) {
   try {
     const blob = new Blob([rawData], { type: "application/json" });
@@ -66,47 +68,38 @@ async function runOneTimeMigration(user) {
   try {
     const rawLocalData = localStorage.getItem("tournaments");
     if (!rawLocalData) {
-      console.log("[MIGRATION] No 'tournaments' array found in localStorage to migrate.");
-      alert("No local data found to migrate. Your storage might already be empty or moved!");
+      console.log("[MIGRATION] No local tournament records found.");
+      alert("No local data found to migrate.");
       return;
     }
-
-    // 1. INSTANT EXPORT: Download the file immediately so you have a physical copy right now
-    console.log("[MIGRATION] Triggering file backup download...");
+    
+    console.log("[MIGRATION] Exporting physical backup file...");
     exportTournamentsToFile(rawLocalData);
-
+    
     const localTournaments = JSON.parse(rawLocalData);
     if (!Array.isArray(localTournaments) || localTournaments.length === 0) {
-      console.log("[MIGRATION] Local tournaments array is empty.");
-      alert("Local tournaments list is empty. JSON backup file downloaded, but nothing to sync to cloud.");
+      alert("Local storage file downloaded, but list array is empty.");
       return;
     }
-
-    console.log(`[MIGRATION] Found ${localTournaments.length} tournaments. Beginning secure cloud upload...`);
+    
+    console.log(`[MIGRATION] Forcing push for ${localTournaments.length} tournament files directly to Cloud...`);
     let uploadedCount = 0;
-
+    
     for (const tournament of localTournaments) {
       if (!tournament.id) continue;
       
       const tournamentDocRef = doc(db, "users", user.uid, "tournaments", String(tournament.id));
-      const docSnap = await getDoc(tournamentDocRef);
       
-      if (!docSnap.exists()) {
-        await setDoc(tournamentDocRef, tournament);
-        console.log(`[MIGRATION] Successfully backed up tournament ID: ${tournament.id} to Firestore.`);
-        uploadedCount++;
-      } else {
-        console.log(`[MIGRATION] Skip: Tournament ID ${tournament.id} already exists securely in Firestore.`);
-      }
+      await setDoc(tournamentDocRef, tournament);
+      console.log(`[MIGRATION] Force-written tournament ID: ${tournament.id}`);
+      uploadedCount++;
     }
-
-    // Custom popup alert at the end showing status of both actions
-    alert(`🎉 double protection complete!\n\n1. 📥 FILE BACKUP: A backup file has been downloaded to your device.\n2. ☁️ CLOUD SYNC: ${uploadedCount} tournament records have been safely uploaded into your Firestore account.\n\nVerify your records in the Firebase console, then you are completely safe to deploy the final code update!`);
-    console.log("[MIGRATION] Run complete. Check your Firestore console under users/uid/tournaments/");
-
+    
+    alert(`🎉 Migration complete!\n\n1. 📥 FILE BACKUP: A physical copy has been saved to your downloads folder.\n2. ☁️ CLOUD SYNC: ${uploadedCount} tournaments have been pushed to Firestore.\n\nYou can now deploy your final system update layout!`);
+    
   } catch (err) {
-    console.error("[MIGRATION] Critical block transfer error:", err);
-    alert("Migration failed: " + err.message);
+    console.error("[MIGRATION] Critical operation error:", err);
+    alert("Migration operation crashed: " + err.message);
   }
 }
 
@@ -115,11 +108,9 @@ onAuthStateChanged(auth, async (user) => {
     if (authModal) authModal.style.display = "none";
     if (userInfo) userInfo.style.display = "block";
     if (userEmail) userEmail.innerText = user.email;
-    window.currentUser = user; 
+    window.currentUser = user;
     
     console.log("Logged in as:", user.email);
-    console.log("Starting backup and migration sequence...");
-    
     await runOneTimeMigration(user);
   } else {
     if (authModal) authModal.style.display = "flex";
