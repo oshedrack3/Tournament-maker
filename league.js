@@ -288,88 +288,7 @@ function deleteTeam(index) {
 
 
 
-async function rebuildTableFromMatches() {
-  const tournament = await getCurrentTournament();
-  if (!tournament) return;
 
-  const table = {};
-
-
-  tournament.teams.forEach(team => {
-    table[team] = {
-      name: team,
-      played: 0,
-      wins: 0,
-      draws: 0,
-      losses: 0,
-      gf: 0,
-      ga: 0,
-      points: 0
-    };
-  });
-
-  tournament.matches.forEach(match => {
-    if (!match.played) return;
-
-    const home = table[match.home];
-    const away = table[match.away];
-
-
-    const hg = Number(match.homeGoals || 0);
-    const ag = Number(match.awayGoals || 0);
-
-    
-    home.played++;
-    away.played++;
-
-    
-    home.gf += hg;
-    home.ga += ag;
-
-    away.gf += ag;
-    away.ga += hg;
-
-   
-    if (hg > ag) {
-      home.wins++;
-      home.points += 3;
-      away.losses++;
-    } else if (ag > hg) {
-      away.wins++;
-      away.points += 3;
-      home.losses++;
-    } else {
-      home.draws++;
-      away.draws++;
-      home.points += 1;
-      away.points += 1;
-    }
-  });
-
-  tournament.table = Object.values(table);
-
-
-  await updateTournament(tournament);
-  
- 
-  if (typeof renderTable === "function") {
-    renderTable(tournament.table);
-  }
-}
-
-
-
-
-function getSortedTable(table) {
-  return [...table].sort((a, b) => {
-    if (b.pts !== a.pts) return b.pts - a.pts;
-
-    const gdA = a.gf - a.ga;
-    const gdB = b.gf - b.ga;
-
-    return gdB - gdA;
-  });
-}
 
 
 
@@ -623,49 +542,195 @@ async function renderTournamentList() {
 
 
 
+function renderTable(data = []) {
+  const tbody = document.getElementById("tableBody");
+  if (!tbody) return;
+  
+  tbody.innerHTML = "";
+  
+  if (!Array.isArray(data) || data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;">No table data</td></tr>`;
+    return;
+  }
+  
+  data.forEach((team, index) => {
+    const tr = document.createElement("tr");
+    tr.setAttribute("data-row-index", index);
+    
+    const gd = team.gd ?? ((team.gf || 0) - (team.ga || 0));
+    const gdClass = gd < 0 ? 'neg' : '';
+    
+    tr.innerHTML = `
+      <td>${index + 1}</td>
+      <td>
+        <div class="table-team-cell">
+          <strong>${team.name || ''}</strong>
+        </div>
+      </td>
+      <td>${team.played || 0}</td>
+      <td>${team.wins || 0}</td>
+      <td>${team.draws || 0}</td>
+      <td>${team.losses || 0}</td>
+      <td>${team.gf || 0}</td>
+      <td>${team.ga || 0}</td>
+      <td class="${gdClass}">${gd >= 0 ? '+' + gd : gd}</td>
+      <td><strong>${team.pts || 0}</strong></td>  <!-- ✅ FIXED -->
+    `;
+    
+    tbody.appendChild(tr);
+  });
+}
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-function buildTable() {
+function rebuildTableFromMatches() {
   const tournament = getCurrentTournament();
   if (!tournament) return;
   
-  tournament.table = tournament.teams.map(team => ({
-    name: team,
-    played: 0,
-    wins: 0,
-    draws: 0,
-    losses: 0,
-    gf: 0,
-    ga: 0,
-    points: 0
-  }));
+  const table = {};
+  
+  
+  tournament.teams.forEach(team => {
+    table[team] = {
+      name: team,
+      played: 0,
+      wins: 0,
+      draws: 0,
+      losses: 0,
+      gf: 0,
+      ga: 0,
+      gd: 0,
+      pts: 0
+    };
+  });
+  
+  
+  tournament.matches.forEach(match => {
+    if (!match.played) return;
+    
+    const home = table[match.home];
+    const away = table[match.away];
+    if (!home || !away) return;
+    
+    const hg = Number(match.homeGoals ?? 0);
+    const ag = Number(match.awayGoals ?? 0);
+    
+    home.played++;
+    away.played++;
+    
+    home.gf += hg;
+    home.ga += ag;
+    
+    away.gf += ag;
+    away.ga += hg;
+    
+    if (hg > ag) {
+      home.wins++;
+      home.pts += 3;
+      away.losses++;
+    } else if (ag > hg) {
+      away.wins++;
+      away.pts += 3;
+      home.losses++;
+    } else {
+      home.draws++;
+      away.draws++;
+      home.pts += 1;
+      away.pts += 1;
+    }
+  });
+  
+  
+  Object.values(table).forEach(team => {
+    team.gd = team.gf - team.ga;
+  });
+  
+  tournament.table = Object.values(table);
+  updateTournament(tournament);
+  
+  if (typeof renderTable === "function") {
+    renderTable(tournament.table);
+  }
+}
+
+
+
+
+
+function setMatchResult(home, away, hg, ag) {
+  const tournament = getCurrentTournament();
+  if (!tournament) return;
+  
+  const match = tournament.matches.find(
+    m => m.home === home && m.away === away
+  );
+  
+  if (!match) return;
+  
+  
+  match.homeGoals = hg;
+  match.awayGoals = ag;
+  match.played = true;
+  
   
   updateTournament(tournament);
+  
+  
+  rebuildTableFromMatches();
+  
+  const updatedTournament = getCurrentTournament();
+  
+  renderFixtures();
+  renderCupFixtures();
+  renderCupTables();
+  renderTable(getSortedTable(updatedTournament.table));
+  checkForEndOfGroupstage();
+  
+  showActionModal("✅ Result Saved", "success");
 }
+
+
+function handleSetScore() {
+  const home = document.getElementById("homeTeam").textContent.trim();
+  const away = document.getElementById("awayTeam").textContent.trim();
+  
+  const hg = parseInt(document.getElementById("homeGoals").value);
+  const ag = parseInt(document.getElementById("awayGoals").value);
+  
+  if (!home || !away || home === away || isNaN(hg) || isNaN(ag)) {
+    showAlert("Invalid Team or Score input");
+    return;
+  }
+  
+  setMatchResult(home, away, hg, ag);
+  closeResultRecord();
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -763,57 +828,6 @@ function generateFixtures(rounds) {
   setCurrentRound(1);
   updateTournament(tournament);
   renderRecords();
-}
-
-
-function handleSetScore() {
-  const home = document.getElementById("homeTeam").textContent.trim();
-  const away = document.getElementById("awayTeam").textContent.trim();
-  
-  const homeGoalsInput = document.getElementById("homeGoals");
-  const awayGoalsInput = document.getElementById("awayGoals");
-  
-  const hg = parseInt(homeGoalsInput.value);
-  const ag = parseInt(awayGoalsInput.value);
-  
-  if (!home || !away || home === away || isNaN(hg) || isNaN(ag)) {
-    showAlert("Invalid Team or Score input");
-    return;
-  }
-  
-  setMatchResult(home, away, hg, ag);
-  
-  closeResultRecord();
-}
-
-
-
-
-function setMatchResult(home, away, hg, ag) {
-  const tournament = getCurrentTournament();
-  if (!tournament) return;
-
-  const match = tournament.matches.find(
-    m => m.home === home && m.away === away
-  );
-
-  match.homeGoals = hg;
-  match.awayGoals = ag;
-  match.played = true;
-
-  rebuildTableFromMatches();
-
-  updateTournament(tournament);
-
-  const updated = getCurrentTournament();
-  renderFixtures();
-  renderCupFixtures();
-  renderCupTables();
-  renderTable(getSortedTable(updated.table));
-checkForEndOfGroupstage();
-  
-  showActionModal("✅ Result Saved", "success");
-
 }
 
 
@@ -986,6 +1000,18 @@ function renderFormView() {
     container.appendChild(row);
   });
 }
+
+function getSortedTable(table) {
+  return [...table].sort((a, b) => {
+    if (b.pts !== a.pts) return b.pts - a.pts;
+
+    const gdA = a.gf - a.ga;
+    const gdB = b.gf - b.ga;
+
+    return gdB - gdA;
+  });
+}
+
 
 
 function getPlayedMatches(matches) {
@@ -1455,116 +1481,6 @@ function renderStreakCard(containerId, dataArray, title, suffix = "") {
 
 
 
-function rebuildTableFromMatches() {
-  const tournament = getCurrentTournament();
-  if (!tournament) return;
-  
-  const teams = tournament.teams || [];
-  const matches = tournament.matches || [];
-  
-  const table = {};
-  
-  teams.forEach(team => {
-    table[team] = {
-      name: team,
-      played: 0,
-      wins: 0,
-      draws: 0,
-      losses: 0,
-      gf: 0,
-      ga: 0,
-      points: 0
-    };
-  });
-  
-  matches.forEach(match => {
-    if (!match || !match.played) return;
-    if (!table[match.home] || !table[match.away]) return;
-    
-    const hg = Number(match.homeGoals ?? match.homeScore ?? 0);
-    const ag = Number(match.awayGoals ?? match.awayScore ?? 0);
-    
-    const home = table[match.home];
-    const away = table[match.away];
-    
-    home.played++;
-    away.played++;
-    home.gf += hg;
-    home.ga += ag;
-    away.gf += ag;
-    away.ga += hg;
-    
-    if (hg > ag) {
-      home.wins++;
-      home.points += 3;
-      away.losses++;
-    } else if (ag > hg) {
-      away.wins++;
-      away.points += 3;
-      home.losses++;
-    } else {
-      home.draws++;
-      away.draws++;
-      home.points += 1;
-      away.points += 1;
-    }
-  });
-  
-  const sortedTable = Object.values(table).sort((a, b) => {
-    if (b.points !== a.points) return b.points - a.points;
-    const gdA = a.gf - a.ga;
-    const gdB = b.gf - b.ga;
-    if (gdB !== gdA) return gdB - gdA;
-    return b.gf - a.gf;
-  });
-  
-  tournament.table = sortedTable;
-  updateTournament(tournament);
-  
-  if (typeof renderTable === "function") {
-    renderTable(tournament.table);
-  }
-}
-
-function renderTable(data = []) {
-  const tbody = document.getElementById("tableBody");
-  if (!tbody) return;
-  
-  tbody.innerHTML = "";
-  
-  if (!Array.isArray(data) || data.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;">No table data</td></tr>`;
-    return;
-  }
-  
-  data.forEach((team, index) => {
-    const tr = document.createElement("tr");
-    tr.setAttribute("data-row-index", index);
-    
-    const gd = (team.gf || 0) - (team.ga || 0);
-    const gdClass = gd < 0 ? 'neg' : '';
-       
-    tr.innerHTML = `
-      <td>${index + 1}</td>
-      <td>
-        <div class="table-team-cell">
-          <strong>${team.name || ''}</strong>
-        </div>
-      </td>
-      <td>${team.played || 0}</td>
-      <td>${team.wins || 0}</td>
-      <td>${team.draws || 0}</td>
-      <td>${team.losses || 0}</td>
-      <td>${team.gf || 0}</td>
-      <td>${team.ga || 0}</td>
-      <td class="${gdClass}">${gd >= 0 ? '+' + gd : gd}</td>
-      <td><strong>${team.points || 0}</strong></td>
-    `;
-    
-    tbody.appendChild(tr);
-  });
-}
-
 
 
 function getLeagueWinnerFinal() {
@@ -1696,6 +1612,7 @@ function getLeagueWinnerFinal() {
   };
 }
 
+
 function renderChampionPodium() {
   const el = document.getElementById("championPodium");
   const tournament = getCurrentTournament();
@@ -1704,10 +1621,11 @@ function renderChampionPodium() {
   const winner = getLeagueWinnerFinal();
   if (!winner) return;
   
-  const teamLogo = tournament.teamLogos?.[winner.team];
+  const logoKey = tournament.teamLogos?.[winner.team];
   const tournamentLogo = tournament.logo || "";
   
   const isDecided = winner.decided && winner.team !== "TBD";
+  
   
   el.innerHTML = `
     <div class="champion-card">
@@ -1721,10 +1639,7 @@ function renderChampionPodium() {
       </div>
 
       <div class="champion-team-logo-wrap">
-        ${isDecided && teamLogo 
-          ? `<img src="${teamLogo}" class="champion-team-logo">` 
-          : `<div class="team-logo-placeholder">?</div>`
-        }
+        <div class="team-logo-placeholder">?</div>
       </div>
 
       <div class="champion-name">
@@ -1738,4 +1653,25 @@ function renderChampionPodium() {
 
     </div>
   `;
+  
+  
+  if (isDecided && logoKey) {
+    getLogoFromIndexedDB(logoKey)
+      .then(base64Logo => {
+        const wrap = el.querySelector(".champion-team-logo-wrap");
+        const placeholder = el.querySelector(".team-logo-placeholder");
+        
+        if (base64Logo && wrap && placeholder) {
+          const img = document.createElement("img");
+          img.className = "champion-team-logo";
+          img.src = base64Logo;
+          img.alt = winner.team;
+          
+          wrap.replaceChild(img, placeholder);
+        }
+      })
+      .catch(err => console.error("Error loading champion logo:", err));
+  }
 }
+
+

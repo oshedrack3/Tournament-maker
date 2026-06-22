@@ -252,3 +252,11 @@ async function renderTeams(containerId = "teamList") {
     container.appendChild(div);
   });
 }
+
+
+
+
+
+
+
+
