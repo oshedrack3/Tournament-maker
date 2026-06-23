@@ -932,6 +932,31 @@ function getTeamForm(teamName, limit = 5) {
 }
 
 
+function getTeamForm(teamName) {
+  const tournament = getCurrentTournament();
+  if (!tournament?.matches) return [];
+  
+  const teamMatches = tournament.matches
+    .filter(m => m.played && (m.home === teamName || m.away === teamName))
+    .filter(m => m.playedAt)
+    .sort((a, b) => b.playedAt - a.playedAt)
+    .slice(0, 5);
+  
+  console.log(teamName, "matches found:", teamMatches.length, teamMatches);
+  
+  return teamMatches.map(m => {
+    const isHome = m.home === teamName;
+    const goalsFor = isHome ? m.homeGoals : m.awayGoals;
+    const goalsAgainst = isHome ? m.awayGoals : m.homeGoals;
+    
+    if (goalsFor > goalsAgainst) return 'W';
+    if (goalsFor < goalsAgainst) return 'L';
+    return 'D';
+  });
+}
+
+
+
 function renderFormView() {
   const tournament = getCurrentTournament();
   if (!tournament) return;
@@ -988,6 +1013,7 @@ function renderFormView() {
     container.appendChild(row);
   });
 }
+
 
 function getSortedTable(table) {
   return [...table].sort((a, b) => {
