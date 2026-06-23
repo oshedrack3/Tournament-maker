@@ -112,6 +112,11 @@
     <span class="btn-text">Next</span>
   </button>
   
+<button class="btn-secondary" onclick="openDateResetModal()">
+  <span class="btn-icon">✏️</span>
+  <span class="btn-text">Edit Date</span>
+</button>
+
   <button onclick="shareFixtures()">
     <span class="btn-icon">📷</span>
     <span class="btn-text">Share</span>
@@ -646,29 +651,20 @@
 
 
 
-
-<div id="authModal" class="modal-overlay" style="display:none;">
-  <div class="modal-box" style="max-width: 350px; text-align: center; padding: 25px 20px;">
-    <h2 style="margin-bottom: 10px;">Manager Login</h2>
-    <p style="color: #666; margin-bottom: 20px; font-size: 13px;">
-      Sign in to manage your eFootball League tournaments.
-    </p>
-    
-    <input type="email" id="authEmail" placeholder="Manager Email" required style="margin-bottom: 10px;">
-    <input type="password" id="authPassword" placeholder="Password" required style="margin-bottom: 15px;">
-    
-    <button id="signInBtn" style="background: #007bff; color: white; border: none; padding: 12px; margin-bottom: 8px; border-radius: 6px; font-weight: bold; width: 100; cursor: pointer;">
-      Sign In
-    </button>
-    
-    <button id="signUpBtn" style="background: transparent; color: #007bff; border: 1px solid #007bff; padding: 10px; border-radius: 6px; font-weight: bold; width: 100; cursor: pointer;">
-      Create Account
-    </button>
+<div class="modal-overlay" id="dateResetModal" style="display:none;">
+  <div class="modal-content">
+    <input id="dateResetHome" placeholder="Home Team Name">
+    <input id="dateResetAway" placeholder="Away Team Name">
+  <label for="dateResetDate" style="color:#666; font-size:14px; display:block; margin-bottom:6px;">
+  Select New Date
+</label>
+<input id="dateResetDate" type="datetime-local">
+    <div class="modal-actions">
+      <button onclick="handleDateReset()">Update</button>
+      <button onclick="closeDateResetModal()">Cancel</button>
+    </div>
   </div>
 </div>
-
-
-
 
 
 

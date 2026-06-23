@@ -22,7 +22,7 @@ async function renderFixtures() {
   const roundLabel = document.getElementById("roundLabel");
   if (roundLabel) {
     roundLabel.innerText =
-      maxRound === 1 ? "" : `Round ${currentRound}/${maxRound}`;
+      (!searchQuery && maxRound !== 1) ? `Round ${currentRound}/${maxRound}` : "";
   }
   
   let roundMatches = tournament.matches;
@@ -40,6 +40,13 @@ async function renderFixtures() {
     );
   }
   
+  roundMatches.sort((a, b) => {
+    const rA = a.round || 1;
+    const rB = b.round || 1;
+    if (rA !== rB) return rA - rB;
+    return 0;
+  });
+  
   if (roundMatches.length === 0) {
     container.innerHTML = searchQuery ?
       '<p class="emptyText">No matching fixtures found</p>' :
@@ -47,7 +54,19 @@ async function renderFixtures() {
     return;
   }
   
+  let displayedRound = null;
+  
   roundMatches.forEach(match => {
+    const matchRound = match.round || 1;
+    
+    if (matchRound !== displayedRound) {
+      displayedRound = matchRound;
+      const header = document.createElement("div");
+      header.className = "round-header";
+      header.innerText = `Round ${matchRound}`;
+      container.appendChild(header);
+    }
+    
     const div = document.createElement("div");
     div.className = `fixture-row ${match.played ? "played" : "not-played"}`;
     
@@ -55,7 +74,7 @@ async function renderFixtures() {
     const awayLogoKey = tournament.teamLogos?.[match.away];
     
     div.innerHTML = `
-      <div class="fixture-label">League</div>
+      <div class="fixture-label">Galatico E-League</div>
       
       <div class="fixture-row-content">
         <div class="fixture-teams-stack">
@@ -83,7 +102,7 @@ async function renderFixtures() {
         </div>
       </div>
     `;
-
+    
     if (homeLogoKey) {
       getLogoFromIndexedDB(homeLogoKey).then(base64Logo => {
         const homeRow = div.querySelector(".team-home-container");
@@ -97,7 +116,7 @@ async function renderFixtures() {
         }
       }).catch(err => console.error("Error loading home logo:", err));
     }
-
+    
     if (awayLogoKey) {
       getLogoFromIndexedDB(awayLogoKey).then(base64Logo => {
         const awayRow = div.querySelector(".team-away-container");
@@ -111,7 +130,7 @@ async function renderFixtures() {
         }
       }).catch(err => console.error("Error loading away logo:", err));
     }
-
+    
     div.style.cursor = "pointer";
     div.addEventListener("click", () => {
       if (typeof openLeagueRecorder === "function") {
@@ -362,6 +381,7 @@ window.onload = function () {
 
 
 function goToFixturePage() {
+  
   setActiveNav('fixturesBtn')
   document.getElementById("listOfTournamentPage").style.display = "none";
   hideAllPages();
@@ -370,6 +390,7 @@ function goToFixturePage() {
   document.getElementById("fixturePageHead").style.display = "block";
   document.getElementById("nav").style.display = "flex";
   renderFixtures();
+  
 }
 
 
@@ -656,39 +677,6 @@ function rebuildTableFromMatches() {
 
 
 
-
-
-function setMatchResult(home, away, hg, ag) {
-  const tournament = getCurrentTournament();
-  if (!tournament) return;
-  
-  const match = tournament.matches.find(
-    m => m.home === home && m.away === away
-  );
-  
-  if (!match) return;
-  
-  
-  match.homeGoals = hg;
-  match.awayGoals = ag;
-  match.played = true;
-  
-  
-  updateTournament(tournament);
-  
-  
-  rebuildTableFromMatches();
-  
-  const updatedTournament = getCurrentTournament();
-  
-  renderFixtures();
-  renderCupFixtures();
-  renderCupTables();
-  renderTable(getSortedTable(updatedTournament.table));
-  checkForEndOfGroupstage();
-  
-  showActionModal("✅ Result Saved", "success");
-}
 
 
 function handleSetScore() {
@@ -1017,12 +1005,11 @@ function getSortedTable(table) {
 function getPlayedMatches(matches) {
   return matches.filter(
     m =>
-    m.played &&
-    m.homeGoals !== null &&
-    m.awayGoals !== null
+    m.played === true &&
+    typeof m.homeGoals === "number" &&
+    typeof m.awayGoals === "number"
   );
 }
-
 
 
 function getRecords(matches) {
@@ -1169,46 +1156,6 @@ function getLongestWinningRuns(matches) {
     .sort((a, b) => b[1] - a[1]);
 }
 
-
-function getLongestUnbeatenRuns(matches) {
-  const playedMatches = getPlayedMatches(matches);
-  
-  const streaks = {};
-  
-  playedMatches.forEach(m => {
-    [m.home, m.away].forEach(team => {
-      if (!streaks[team]) {
-        streaks[team] = { current: 0, best: 0 };
-      }
-    });
-    
-    if (m.homeGoals >= m.awayGoals) {
-      streaks[m.home].current++;
-    } else {
-      streaks[m.home].current = 0;
-    }
-    
-    if (m.awayGoals >= m.homeGoals) {
-      streaks[m.away].current++;
-    } else {
-      streaks[m.away].current = 0;
-    }
-    
-    streaks[m.home].best = Math.max(
-      streaks[m.home].best,
-      streaks[m.home].current
-    );
-    
-    streaks[m.away].best = Math.max(
-      streaks[m.away].best,
-      streaks[m.away].current
-    );
-  });
-  
-  return Object.entries(streaks)
-    .map(([team, data]) => [team, data.best])
-    .sort((a, b) => b[1] - a[1]);
-}
 
 
 

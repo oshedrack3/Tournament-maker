@@ -97,6 +97,7 @@ function getCurrentTournamentId() {
   return currentTournamentId;
 }
 
+
 function setCurrentTournamentId(id) {
   currentTournamentId = id ? String(id) : null;
 }
@@ -126,6 +127,7 @@ function openTournament(id) {
     const el = document.getElementById("leagueName");
     if (el) el.textContent = name;
     goToTournamentPage();
+    backfillPlayedAtOnce(tournament);
   } else {
     const el = document.getElementById("cupName");
     if (el) el.textContent = name;
