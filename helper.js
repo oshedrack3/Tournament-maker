@@ -25,9 +25,6 @@ function hideAllPages() {
   });
 }
 
-
-
-
 function showAlert(message) {
   const modal = document.getElementById("alertModal");
   const text = document.getElementById("alertText");
@@ -99,7 +96,7 @@ function confirmYes() {
 
 function confirmNo() {
   document.getElementById("confirmModal").style.display = "none";
-  confirmCallback = null; 
+  confirmCallback = null;
 }
 
 
@@ -122,7 +119,6 @@ function handleGenerateFixtures() {
   }
 }
 
-
 function proceedToInput() {
   showInputModal("Enter 1 for Single Round or 2 for Double Round:", (input) => {
     const rounds = parseInt(input);
@@ -134,11 +130,9 @@ function proceedToInput() {
     
     generateFixtures(rounds);
     goToFixturePage();
- 
+    
   });
 }
-
-
 
 
 function getAllTournaments() {
@@ -153,30 +147,31 @@ function removeTournament(id) {
 
 async function removeTournament(id) {
   const idStr = String(id).trim();
-  const activeUser = auth.currentUser;
-  if (!activeUser) return;
   
   try {
-    // Delete from Firestore
-    const ref = doc(db, "users", activeUser.uid, "tournaments", idStr);
-    await deleteDoc(ref);
+    let tournaments = JSON.parse(localStorage.getItem("tournaments") || "[]");
     
-    // Remove from memory
-    allTournaments = allTournaments.filter(t => t.id !== idStr);
+    tournaments = tournaments.filter(t => t.id !== idStr);
     
-    // If deleted tournament was active, clear it
+    localStorage.setItem("tournaments", JSON.stringify(tournaments));
+    
+    if (typeof allTournaments !== "undefined") {
+      allTournaments = tournaments;
+    }
+    
     if (currentTournament && currentTournament.id === idStr) {
-      if (unsubscribeTournament) unsubscribeTournament();
       currentTournament = null;
       localStorage.removeItem("currentTournamentId");
     }
     
-    console.log("[FIRESTORE] Deleted tournament:", idStr);
+    console.log("[LOCAL] Deleted tournament:", idStr);
   } catch (err) {
-    console.error("[FIRESTORE] Delete failed:", err);
+    console.error("[LOCAL] Delete failed:", err);
     showAlert("Failed to delete tournament: " + err.message);
   }
 }
+
+
 
 async function deleteTournament(id) {
   const tournaments = getAllTournaments();
@@ -198,6 +193,7 @@ async function deleteTournament(id) {
   );
 }
 
+
 function showCreateTournament() {
   document.getElementById("createTour").style.display = "block";
 }
@@ -207,9 +203,9 @@ function hideCreateTournament() {
 }
 
 function openCreateTournament() {
+ 
   document.getElementById("createTour").style.display = "block";
 }
-
 
 
 let activeInput = null;
@@ -230,19 +226,15 @@ function openNumpad(inputId) {
 }
 
 
-
 function pressNum(n) {
   if (!activeInput) return;
   activeInput.value = (activeInput.value || '') + n;
 }
+
 function clearNum() {
   if (!activeInput) return;
   activeInput.value = '';
 }
-
-
-
-
 
 function goToCupPage() {
   document.getElementById("listOfTournamentPage").style.display = "none";
@@ -254,14 +246,14 @@ function goToCupPage() {
   renderCupFixtures();
   document.getElementById("cupPageHead").style.display = "flex";
   document.getElementById("cupHome").style.display = "flex";
-
+  
   const tournament = getCurrentTournament();
-if (tournament) {
-  renderCupTables();
-  renderCupFixtures()
-  toggleCupView("tables");
-}
-
+  if (tournament) {
+    renderCupTables();
+    renderCupFixtures()
+    toggleCupView("tables");
+  }
+  
 }
 
 
@@ -301,8 +293,6 @@ function setActiveNav(buttonId) {
 }
 
 
-
-
 function openLeagueRecorder(match) {
   if (!match) return;
   
@@ -325,8 +315,6 @@ function openLeagueRecorder(match) {
   document.getElementById("numpad").classList.remove("hidden");
 }
 
-
-
 const logoInput = document.getElementById("teamLogoInput");
 const logoPreview = document.getElementById("teamLogoPreview");
 
@@ -343,7 +331,7 @@ logoInput.addEventListener("change", function() {
   
   reader.onload = function(e) {
     logoPreview.src = e.target.result;
-    logoPreview.classList.add("show"); 
+    logoPreview.classList.add("show");
   };
   
   reader.readAsDataURL(file);
@@ -393,11 +381,7 @@ function toggleView(view) {
   if (!activeView) return;
   
   activeView.style.display = "block";
-}  
-
-
-
-
+}
 
 
 
@@ -455,19 +439,18 @@ function handleMenuAction(action) {
   const actions = {
     addTeam: openAddTeam,
     importTeams: importTeams,
-    deleteTeam:deleteTeamInfo,
+    deleteTeam: deleteTeamInfo,
     createTournament: openCreateTournament,
     enableExportMode: enableExportMode,
-    newCup:openCupBox,
-    importTournament:
-    openImportTournament,
-    openTournament:openTournamentInfo,
-    deleteTournament:deleteTournamentInfo,
-    shareGroupTable:shareCupTable,
+    newCup: openCupBox,
+    importTournament: openImportTournament,
+    openTournament: openTournamentInfo,
+    deleteTournament: deleteTournamentInfo,
+    shareGroupTable: shareCupTable,
     
-    deleteCupTeam:deleteCupTeamInfo
+    deleteCupTeam: deleteCupTeamInfo
     
-  
+    
   };
   
   actions[action]?.();
@@ -475,15 +458,14 @@ function handleMenuAction(action) {
 
 const menuConfig = {
   cup: [
-    { label: "Create New Cup", 
-    action: "newCup" },
+    {
+      label: "Start New Tournament",
+      action: "newCup"
+    },
     
     { label: "Register New Teams", action: "addTeam" },
     { label: "Import Teams", action: "importTeams" },
-    { label: "Export Team", action: "exportTeam" },
-    { label: "Delete Team", action: "deleteCupTeam" },
-    { label: "Share Group Table", action: "shareGroupTable" },
-    { label: "Share Group Matches", action: "shareGroupMatches" }
+    { label: "Delete or Edit Team", action: "deleteCupTeam" }
   ],
   
   league: [
@@ -502,7 +484,7 @@ const menuConfig = {
 };
 
 function openAddTeam() {
- toggleView('team');
+  toggleView('team');
   closeMenu();
   document.getElementById("addNewTeam").style.display = "block";
   
@@ -518,54 +500,51 @@ function deleteTeamInfo() {
   closeMenu();
   showAlert("Swap to the left on  the team you want to delete or edit");
   
- toggleView("team");
-  }
-  
-  
-  function deleteCupTeamInfo() {
+  toggleView("team");
+}
+
+
+function deleteCupTeamInfo() {
   closeMenu();
   toggleCupView("cupBox");
-toggleCupSetUpView("teams")
-  showAlert("Click and hold the team you want to delete");
-  
- 
-  }
+  toggleCupSetUpView("teams")
+  showAlert("Swap to the left on the Team  to show the  Edit and Delete Team button");
   
   
-  function deleteTournamentInfo() {
-  closeMenu();
-  showAlert("Click and hold on the Tournament you want to delete");
-
 }
+
+
+function deleteTournamentInfo() {
+  closeMenu();
+  showAlert("Click on the menu icon on the tornament to see the delete button");
   
- function openTournamentInfo() {
-   
+}
+
+function openTournamentInfo() {
+  
   showAlert("Click on the tournament You want to Open");
   closeMenu();
-  }
+}
+
+
+
+function openCupBox() {
   
-
-
- function openCupBox() {
- 
   closeMenu();
   toggleCupView('cupBox');
   
-  }
-  
-  
-  function openImportTournament() {
-  document.getElementById("importTournamentInput").click();
 }
 
 
-
+function openImportTournament() {
+  document.getElementById("importTournamentInput").click();
+}
 
 
 function handleImport(event) {
   const file = event.target.files[0];
   if (!file) return;
-
+  
   const reader = new FileReader();
   reader.onload = async function(e) {
     if (e.target?.result) {
@@ -575,9 +554,6 @@ function handleImport(event) {
   };
   reader.readAsText(file);
 }
-
-
-
 
 
 let exportMode = false;
@@ -591,8 +567,8 @@ function enableExportMode() {
   document.getElementById("confirmExportBtn").style.display = "inline-flex";
   document.getElementById("exitExportBtn").style.display = "inline-flex";
   
- 
-    showAlert("Tap tournaments to select then export")
+  
+  showAlert("Tap tournaments to select then export")
   
   renderTournamentList();
 }
@@ -603,11 +579,10 @@ function exitExportMode() {
   
   document.getElementById("confirmExportBtn").style.display = "none";
   document.getElementById("exitExportBtn").style.display = "none";
- 
+  
   
   renderTournamentList();
 }
-
 
 
 function toggleSelect(id) {
@@ -621,22 +596,21 @@ function toggleSelect(id) {
 }
 
 
-
 async function exportSelectedTournaments() {
   const tournaments = getTournaments();
-
+  
   const selected = tournaments.filter(t =>
     selectedTournaments.includes(t.id)
   );
-
+  
   if (selected.length === 0) {
     showAlert("No tournaments selected");
     return;
   }
-
+  
   // Deep clone the selected data so we don't accidentally pollute our current runtime state
   const exportData = JSON.parse(JSON.stringify(selected));
-
+  
   // Loop through the clone and embed the real base64 images from IndexedDB
   for (const tournament of exportData) {
     if (tournament.teamLogos) {
@@ -659,18 +633,16 @@ async function exportSelectedTournaments() {
       }
     }
   }
-
+  
   const blob = new Blob(
-    [JSON.stringify(exportData, null, 2)],
-    { type: "application/json" }
+    [JSON.stringify(exportData, null, 2)], { type: "application/json" }
   );
-
+  
   const file = new File(
     [blob],
-    `tournaments-${selected.length}.json`,
-    { type: "application/json" }
+    `tournaments-${selected.length}.json`, { type: "application/json" }
   );
-
+  
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
     navigator.share({
       title: "Tournaments Export",
@@ -680,7 +652,7 @@ async function exportSelectedTournaments() {
   } else {
     fallbackDownload(file);
   }
-
+  
   exitExportMode();
 }
 
@@ -699,8 +671,6 @@ function fallbackDownload(file) {
   
   showAlert("File downloaded");
 }
-
-
 
 function openListModal(title, html) {
   document.getElementById("listModalTitle").textContent = title;
@@ -757,18 +727,18 @@ async function importTournamentsData(jsonString) {
       showAlert("Invalid backup file structure");
       return;
     }
-
+    
     const tournamentsList = Array.isArray(importedData) ? importedData : [importedData];
     const existingTournaments = getTournaments();
     
     let successCount = 0;
-
+    
     for (const tournament of tournamentsList) {
       if (!tournament.id || !tournament.name) continue;
-
+      
       const duplicateIndex = existingTournaments.findIndex(t => String(t.id) === String(tournament.id));
       if (duplicateIndex !== -1) continue;
-
+      
       if (tournament.teamLogos) {
         const teams = Object.keys(tournament.teamLogos);
         
@@ -789,11 +759,11 @@ async function importTournamentsData(jsonString) {
           }
         }
       }
-
+      
       existingTournaments.push(tournament);
       successCount++;
     }
-
+    
     if (successCount > 0) {
       localStorage.setItem("tournaments", JSON.stringify(existingTournaments));
       showAlert(`Successfully imported ${successCount} tournament(s)!`);
@@ -803,7 +773,7 @@ async function importTournamentsData(jsonString) {
     } else {
       showAlert("No new or unique tournaments were imported.");
     }
-
+    
   } catch (err) {
     showAlert("Failed to interpret data file structure.");
   }
@@ -812,7 +782,7 @@ async function importTournamentsData(jsonString) {
 function handleTournamentFileImport(event) {
   const file = event.target.files[0];
   if (!file) return;
-
+  
   const reader = new FileReader();
   reader.onload = async function(e) {
     await importTournamentsData(e.target.result);
@@ -890,7 +860,7 @@ async function importAllTeamsFromTournament(sourceId) {
         const currentLogoKey = `logo_${current.id}_${team.replace(/\s+/g, '_')}`;
         current.teamLogos[team] = currentLogoKey;
         
-    
+        
         const promise = getLogoFromIndexedDB(sourceLogoKey)
           .then(base64Data => {
             if (base64Data) {
@@ -898,7 +868,7 @@ async function importAllTeamsFromTournament(sourceId) {
             }
           })
           .catch(err => console.error(`Failed to migrate logo for ${team}:`, err));
-          
+        
         importPromises.push(promise);
       }
       
@@ -907,7 +877,7 @@ async function importAllTeamsFromTournament(sourceId) {
   });
   
   try {
- 
+    
     await Promise.all(importPromises);
     
     updateTournament(current);
@@ -967,10 +937,10 @@ function closeEditModal() {
   document.getElementById("editNameInput").value = "";
   document.getElementById("editLogoInput").value = "";
   const preview = document.getElementById("logoPreview");
-
-preview.src = "";
-renderTeams("cupTeamsContainer");
-preview.style.display = "none";
+  
+  preview.src = "";
+  renderTeams("cupTeamsContainer");
+  preview.style.display = "none";
 }
 
 
@@ -1038,8 +1008,8 @@ async function saveEdit() {
       if (match.home === oldName) match.home = newName;
       if (match.away === oldName) match.away = newName;
     });
-  }; 
-
+  };
+  
   updateMatches(tournament.matches);
   updateMatches(tournament.groupMatches);
   updateMatches(tournament.knockoutMatches);
@@ -1084,7 +1054,7 @@ async function handleSave(tournament, newName, oldName) {
   if (newName !== oldName && tournament.teamLogos && tournament.teamLogos[oldName]) {
     const oldLogoKey = tournament.teamLogos[oldName];
     const newLogoKey = `logo_${tournament.id}_${newName.replace(/\s+/g, '_')}`;
-
+    
     if (oldLogoKey && !oldLogoKey.startsWith("data:image")) {
       try {
         const base64Data = await getLogoFromIndexedDB(oldLogoKey);
@@ -1134,21 +1104,21 @@ async function handleSave(tournament, newName, oldName) {
 async function shareTable() {
   const wrapper = document.querySelector('.table-wrapper');
   const wasInScreenshotMode = wrapper.classList.contains('screenshot-mode');
-
+  
   wrapper.classList.add('screenshot-mode');
-
+  
   await new Promise(resolve => setTimeout(resolve, 100));
-
+  
   try {
     const canvas = await html2canvas(wrapper, {
       backgroundColor: '#161b22',
       scale: 2,
       useCORS: true
     });
-
+    
     canvas.toBlob(async (blob) => {
       const file = new File([blob], 'league-table.png', { type: 'image/png' });
-
+      
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           title: 'eFootball League Table',
@@ -1162,10 +1132,10 @@ async function shareTable() {
         a.download = 'league-table.png';
         a.click();
         URL.revokeObjectURL(url);
-        showActionModal('Image downloaded! Share it manually.','success');
+        showActionModal('Image downloaded! Share it manually.', 'success');
       }
     });
-
+    
   } catch (err) {
     console.error('Share failed:', err);
     showActionModal('Could not capture table', 'delete');
@@ -1293,8 +1263,3 @@ async function shareCupFixture() {
     }
   }
 }
-
-
-  
-
-

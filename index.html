@@ -1,17 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, interactive-widget=overlay-content">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, interactive-widget=overlay-content">
   <title>eFootball League</title>
   <link rel="stylesheet" href="styles.css" />
-
-
-
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-
-
+  
+  
+  
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  
+  
 </head>
+
 <body>
   
   <!-- Page Heads and Nav btn -->
@@ -22,159 +24,150 @@
     
     
     <button class="menu-btn" onclick="setPageAndToggleMenu('tournaments')">
-  ☰
-</button>
+      ☰
+    </button>
   </div>
   
-  
-  
+ 
   
   <!-- Table Page Head -->
   <div id="tablePageHead" style="display:none">
-     <button class="menu-btn" onclick="setPageAndToggleMenu('league')">
-   ☰
- </button>
-  <div class="topSection">
-        <h3 id="leagueName">Tournament Name</h3>
-        </div>
-<div class="btn-tablePage">
-  <button onclick="toggleScreenshotMode()">
-    <span class="btn-icon">🖥️</span>
-    <span class="btn-text">FullView</span>
-  </button>
-  
-  <button onclick="shareTable()">
-    <span class="btn-icon">📷</span>
-    <span class="btn-text">Share</span>
-  </button>
-  
-  <button class="btn-add" data-view="team" onclick="toggleView('team')">
-    <span class="btn-icon">👥</span>
-    <span class="btn-text">Teams</span>
-  </button>
-
-  <button id="formToggleBtn" data-view="form" onclick="toggleView('form')">
-    <span class="btn-icon">📈</span>
-    <span class="btn-text">Form</span>
-  </button>
-
-  <button class="active" data-view="table" onclick="toggleView('table')">
-    <span class="btn-icon">📊</span>
-    <span class="btn-text">Table</span>
-  </button>
-
-  <button data-view="records" onclick="toggleView('records')">
-    <span class="btn-icon">🏆</span>
-    <span class="btn-text">Records</span>
-  </button>
-</div>
-
- 
-
-  <button class="btn-back" onclick="goToListOfTournamentPage()">
-    ❮
-  </button>
-
-
-         
-      </div>  
+    <button class="menu-btn" onclick="setPageAndToggleMenu('league')">
+      ☰
+    </button>
+    <div class="topSection">
+      <h3 id="leagueName">Tournament Name</h3>
+    </div>
+    <div class="btn-tablePage">
+      <button onclick="toggleScreenshotMode()">
+        <span class="btn-icon">🖥️</span>
+        <span class="btn-text">FullView</span>
+      </button>
       
-        
-</div>
-
-
-<!-- fixture page Head -->
-<div id="fixturePageHead" style="display:none">
-  <div class="searchbar-fixtures">
-         
-         <input
-  type="text"
-  id="fixtureSearchInput"
-  placeholder="Search team..."
-  oninput="renderFixtures()"
-/>
-        </div>
-      <div class="btn-tablePage">
-  
-  <button class="btn-create" onclick="handleGenerateFixtures()">
-    <span class="btn-icon">
-      ⚽ </span>
-    <span class="btn-text">Create</span>
-  </button>
-  
-  <button onclick="prevRound()">
-    <span class="btn-icon">❮</span>
-    <span class="btn-text">Prev</span>
-  </button>
-  
-  <button onclick="nextRound()">
-    <span class="btn-icon">❯</span>
-    <span class="btn-text">Next</span>
-  </button>
-  
-<button class="btn-secondary" onclick="openDateResetModal()">
-  <span class="btn-icon">✏️</span>
-  <span class="btn-text">Edit Date</span>
-</button>
-
-  <button onclick="shareFixtures()">
-    <span class="btn-icon">📷</span>
-    <span class="btn-text">Share</span>
-  </button>
+      <button onclick="shareTable()">
+        <span class="btn-icon">📷</span>
+        <span class="btn-text">Share</span>
+      </button>
+      
+      <button class="btn-add" data-view="team" onclick="toggleView('team')">
+        <span class="btn-icon">👥</span>
+        <span class="btn-text">Teams</span>
+      </button>
+      
+      <button id="formToggleBtn" data-view="form" onclick="toggleView('form')">
+        <span class="btn-icon">📈</span>
+        <span class="btn-text">Form</span>
+      </button>
+      
+      <button class="active" data-view="table" onclick="toggleView('table')">
+        <span class="btn-icon">📊</span>
+        <span class="btn-text">Table</span>
+      </button>
+      
+      <button data-view="records" onclick="toggleView('records')">
+        <span class="btn-icon">🏆</span>
+        <span class="btn-text">Records</span>
+      </button>
+    </div>
+    
+    
+    
+    <button class="btn-back" onclick="goToListOfTournamentPage()">
+      ❮
+    </button>
+    
+    
+    
+  </div>
   
   
-</div>
-       
-</div>
-
-
+  </div>
+  
+  
+  <!-- fixture page Head -->
+  <div id="fixturePageHead" style="display:none">
+    <div class="searchbar-fixtures">
+      
+      <input type="text" id="fixtureSearchInput" placeholder="Search team..." oninput="renderFixtures()" />
+    </div>
+    <div class="btn-tablePage">
+      
+      <button class="btn-create" onclick="handleGenerateFixtures()">
+        <span class="btn-icon">
+          ⚽ </span>
+        <span class="btn-text">Create</span>
+      </button>
+      
+      <button onclick="prevRound()">
+        <span class="btn-icon">❮</span>
+        <span class="btn-text">Prev</span>
+      </button>
+      
+      <button onclick="nextRound()">
+        <span class="btn-icon">❯</span>
+        <span class="btn-text">Next</span>
+      </button>
+      
+      <button class="btn-secondary" onclick="openDateResetModal()">
+        <span class="btn-icon">✏️</span>
+        <span class="btn-text">Edit Date</span>
+      </button>
+      
+      <button onclick="shareFixtures()">
+        <span class="btn-icon">📷</span>
+        <span class="btn-text">Share</span>
+      </button>
+      
+      
+    </div>
+    
+  </div>
+  
+  
   <!-- cupPageHead -->
   <section id="cupPageHead" style="display:none">
     
     <div id="cupHome" style="display:none">
-        <button class="menu-btn" onclick="setPageAndToggleMenu('cup')">
-    ☰
-  </button>
+      <button class="menu-btn" onclick="setPageAndToggleMenu('cup')">
+        ☰
+      </button>
       <button class="btn-back" onclick="goToListOfTournamentPage()">
-    ❮
-  </button>
-  
-    <div class="topSection">
-    <h2 id="cupName">Tournament Name</h2>
- 
-  </div>
-
-  </div>
-  
-  <div id="cupTab">
-<div class="cupTopActions">
-
-  <button class="cup-tab"
-    onclick="toggleCupView('fixtures')">
-    Matches
-  </button>
-
-  <button class="cup-tab"
-    onclick="toggleCupView('tables')">
-    Groups
-  </button>
-
-  <button class="cup-tab"
-    onclick="toggleCupView('knockOut')">
-    Bracket
-  </button>
-</div>  
-</div>
-
-
-
-
-<!-- MATCHDAY NAV -->
+        ❮
+      </button>
+      
+      <div class="topSection">
+        <h2 id="cupName">Tournament Name</h2>
+        
+      </div>
+      
+    </div>
+    
+    <div id="cupTab">
+      <div class="cupTopActions">
+        
+        <button class="cup-tab" onclick="toggleCupView('fixtures')">
+          Matches
+        </button>
+        
+        <button class="cup-tab" onclick="toggleCupView('tables')">
+          Groups
+        </button>
+        
+        <button class="cup-tab" onclick="toggleCupView('knockOut')">
+          Bracket
+        </button>
+      </div>
+    </div>
+    
+    
+    
+    
+    <!-- MATCHDAY NAV -->
     <div class="cupRoundBar" style="display:none">
-        <button onclick="shareCupFixture()">
-    <span class="btn-icon">📷</span>
-    <span class="btn-text">Share</span>
-  </button>
+      <button onclick="shareCupFixture()">
+        <span class="btn-icon">📷</span>
+        <span class="btn-text">Share</span>
+      </button>
       <button onclick="prevCupRound()">◀</button>
       
       <span id="cupRoundLabel">Matchday 1</span>
@@ -183,321 +176,354 @@
     
     
     
-<div class="bracketControls" id="bracketControl" style="display:none">
-    <button class="zoomout" onclick="zoomOutBracket()">
-  <span class="btn-icon">-</span>
-  <span class="btn-text">Zoom Out</span>
-</button>
-
-<button class="zoomin" onclick="zoomInBracket()">
-  <span class="btn-icon">+</span>
-  <span class="btn-text">Zoom In</span>
-</button>
-
-  <button class="btn-create" onclick="shareBracket()">
-    <span class="btn-icon">📷</span>
-    <span class="btn-text">Share</span>
-  </button>
-</div>
-
-</section>
+    <div class="bracketControls" id="bracketControl" style="display:none">
+        <div class="bracketTopActions">
   
-  
-  
-  
-  
-     <!-- NAV -->
-<nav class="bottom-nav" id="nav" style="display:none">
-  
-  <button id="standingsBtn" class="active" onclick="goToTablePage()">
-    <span class="btn-icon">🏆</span>
-    <span class="btn-text">Standings</span>
-  </button>
-  
-  <button id="fixturesBtn" onclick="goToFixturePage()">
+  <button class="zoomout bracket-tab active" onclick="toggleBracketMode('fixtures')">
     <span class="btn-icon">📋</span>
-    <span class="btn-text">Fixtures</span>
+    <span class="btn-text">Knockout Matches</span>
   </button>
   
-</nav>
-
-<!-- All main content -->
-
-
-
-<main>
+  <button class="zoomout bracket-tab" onclick="toggleBracketMode('bracket')">
+    <span class="btn-icon">🔀</span>
+    <span class="btn-text">Full Bracket</span>
+  </button>
   
-<section id="listOfTournamentPage" class="page">
-
-<div id="createTour" class="modal-overlay" style="display:none">
-  
-  <div class="tourCreatorSection">
-    <div class="create-tournament">
-      <h2>Create New Tournament</h2>
-      
-      <input type="text" id="tournamentNameInput" placeholder="Tournament name" />
-      
-      <select id="tournamentFormatInput">
-        <option value="league">Round Robin (League)</option>
-        <option value="cup"> Cup</option>
-      </select>
-      
-      <button class="btn-create" onclick="tournamentCreator()">Create</button>
-      <button class="btn-close" onclick="hideCreateTournament()">Close</button>
-    </div>
-  </div>
-</div>      <div class="tourListWrap">
-      <div id="tournamentList"></div>
-      </div>
-      
-</section>
-    
-    
-  
- 
-<section id="tournamentPage" style="display:none" >
-      
-   <!-- Cup Page -->
-   <section id="cupPage" style="display:none">
-     
-     
-  <!-- SETUP BOX -->
-  <div id="cupBox" style="display:none">
-    
-      <div id="cupTeamView" style="display:none">
-   <div id="cupTeamsContainer">
-     
-   </div>
-      </div>
-
-      <!-- GROUP STAGE CARD -->
-      <div id="setUpCard">
-      <div class="stageCard">
-        <div class="stageHeader">
-          <label>
-          <input type="checkbox" id="enableGroups" onchange="toggleGroupSettings()">Enable Group Stage
-          </label>
-        </div>
-
-        <div id="groupOptions" style="display:none;">
-          <label for="teamsPerGroup">Teams Per Group</label>
-          <select id="teamsPerGroup">
-            <option value="2">2 Teams</option>
-            <option value="3">3 Teams</option>
-            <option value="4" selected>4 Teams</option>
-            <option value="5">5 Teams</option>
-            <option value="6">6 Teams</option>
-            <option value="7">7 Teams</option>
-            <option value="8">8 Teams</option>
-            <option value="9">9 Teams</option>
-            <option value="10">10 Teams</option>
-            <option value="11">11 Teams</option>
-            <option value="12">12 Teams</option>
-          </select>
-
-          <label for="teamsQualify">Teams Qualifying</label>
-          <select id="teamsQualify">
-      
-            <option value="2" selected>Top 2</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- KNOCKOUT CARD -->
-      <div class="stageCard">
-        <h3>Knockout Stage</h3>
-        <label for="knockoutRound">Start From</label>
-        <select id="knockoutRound">
-          <option value="16">Round of 16</option>
-          <option value="8" selected>Quarter Final</option>
-          <option value="4">Semi Final</option>
-          <option value="2">Final</option>
-        </select>
-      </div>
-
-      <!-- ACTIONS -->
-      <div class="cupActions">
-        <button class="btn-create" onclick="generateTournament()"> Create</button>
-      </div>
-     
-    </div>
-       </div>
-  </div>
-
-  <!-- CUP SCHEDULE & NAVIGATION -->
-  <div id="cupSchedule" style="display:none">
-   
-  
-    <!-- TABLES -->
-    <div id="cupTables"></div>
-  </div>
-
-  <!-- FULL BRACKET VIEW -->
-  <div id="knockOut" style="display:none">
-    
-        <div id="bracketViewport">
-      <div id="bracket-container"></div>
-    </div>
-  </div>
-  
-  
-  <div id="cupFixtures" style="display:none"></div>
-  
-  
-  <div id="knockoutResultModal" class="knockout-result-modal">
-
-  <div class="knockout-result-card">
-
-    <div class="knockout-close-btn"
-      onclick="closeKnockoutResultModal()">
-      ✕
-    </div>
-
-    <div class="knockout-team-block">
-      <span id="knockoutHomeTeam">
-        Team A
-      </span>
-
-      <input
-        type="text"
-        id="knockoutHomeScore"
-        readonly
-        onclick="setBracketInput(this)"
-      >
-    </div>
-
-    <div class="knockout-vs">
-      VS
-    </div>
-
-    <div class="knockout-team-block">
-      <span id="knockoutAwayTeam">
-        Team B
-      </span>
-
-      <input
-        type="text"
-        id="knockoutAwayScore"
-        readonly
-        onclick="setBracketInput(this)"
-      >
-    </div>
-
-    <div class="knockout-pad">
-
-      <button onclick="bracketPadPress('1')">1</button>
-      <button onclick="bracketPadPress('2')">2</button>
-      <button onclick="bracketPadPress('3')">3</button>
-
-      <button onclick="bracketPadPress('4')">4</button>
-      <button onclick="bracketPadPress('5')">5</button>
-      <button onclick="bracketPadPress('6')">6</button>
-
-      <button onclick="bracketPadPress('7')">7</button>
-      <button onclick="bracketPadPress('8')">8</button>
-      <button onclick="bracketPadPress('9')">9</button>
-
-      <button onclick="bracketPadPress('clear')">
-        ⌫
-      </button>
-
-      <button onclick="bracketPadPress('0')">0</button>
-
-      <button class="save-score-btn"
-        onclick="saveBracketResults()">
-        Save
-      </button>
-
-    </div>
-
-  </div>
-
 </div>
 
-</section>
-
-
-
-  
-       <!-- League TABLE PAGE -->
-     <section id="tablePage" style="display:none">
+      <button class="zoomout" onclick="zoomOutBracket()">
+        <span class="btn-icon">-</span>
+        <span class="btn-text">Zoom Out</span>
+      </button>
       
-           <div id="tableView">
-              <div class="table-wrapper">
-          <table id="leagueTable">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Team</th>
-                <th>P</th>
-                <th>W</th>
-                <th>D</th>
-                <th>L</th>
-                <th>GF</th>
-                <th>GA</th>
-                <th>GD</th>
-                <th>Pts</th>
-              </tr>
-            </thead>
+      <button class="zoomin" onclick="zoomInBracket()">
+        <span class="btn-icon">+</span>
+        <span class="btn-text">Zoom In</span>
+      </button>
+      
+     <button class="btn-create" onclick="shareKnockoutFixtures()">
+  <span class="btn-icon">📷</span>
+  <span class="btn-text">Share Matches</span>
+</button>
+      <button class="btn-create" onclick="shareBracket()">
+        <span class="btn-icon">📷</span>
+        <span class="btn-text">Share Bracket</span>
+      </button>
+      
+        </div>
+    
+  </section>
+  
+  
+  
+  
+  
+  <!-- NAV -->
+  <nav class="bottom-nav" id="nav" style="display:none">
+    
+    <button id="standingsBtn" class="active" onclick="goToTablePage()">
+      <span class="btn-icon">🏆</span>
+      <span class="btn-text">Standings</span>
+    </button>
+    
+    <button id="fixturesBtn" onclick="goToFixturePage()">
+      <span class="btn-icon">📋</span>
+      <span class="btn-text">Fixtures</span>
+    </button>
+    
+  </nav>
+  
+  <!-- All main content -->
+
+  <main>
+    
+    <section id="listOfTournamentPage" class="page">
+      
+      <div id="createTour" class="modal-overlay" style="display:none">
+        
+        <div class="tourCreatorSection">
+          <div class="create-tournament">
+            <h2>Create New Tournament</h2>
             
-            <tbody id="tableBody"></tbody>
-          </table>
+          <label>Tournament Name</label>
+<input type="text" id="tournamentNameInput" placeholder="Tournament name" />
+
+<label>Format</label>
+<select id="tournamentFormatInput">
+  <option value="league">Round Robin (League)</option>
+  <option value="cup">Cup</option>
+</select>
+<div class="start-endDate">
+<label>Select Start Date (First Match Date)</label>
+<input type="date" id="tournamentStartDate">
+
+<label> Select End Date (Last Match Date)</label>
+<input type="date" id="tournamentEndDate">
+</div>
+
+<div class="matchdaySelectsection">
+<label>Select Match Days (Days of the Weeks that Matches will Played)</label>
+<div id="matchDaysSelector">
+  <label><input type="checkbox" value="1"> Mon</label>
+  <label><input type="checkbox" value="2"> Tue</label>
+  <label><input type="checkbox" value="3"> Wed</label>
+  <label><input type="checkbox" value="4"> Thu</label>
+  <label><input type="checkbox" value="5"> Fri</label>
+  <label><input type="checkbox" value="6"> Sat</label>
+  <label><input type="checkbox" value="0"> Sun</label>
+</div>
+</div>
+            <button class="btn-create" onclick="tournamentCreator()">Create</button>
+            <button class="btn-close" onclick="hideCreateTournament()">Close</button>
+          </div>
         </div>
-        </div>  
- <div id="teamView" style="display:none">
-  <div id="teamList"></div>
-</div>
-
-        <div id="formView" style="display:none">
-  <div id="formContainer"></div>
-</div>
-
-<div id="recordsView" style="display:none">
-  
-
-<div id="championPodium"></div>
-  
-  <div id="bestAttack"></div>
-  
-  <div id="bestDefense"></div>
-  
-  <div id="goalDifference"></div>
-  
-  <div id="mostWins"></div>
-  
-  <div id="biggestWin"></div>
-  
-  <div id="highestScoringMatch"></div>
-  
-  <div id="longestWinningRun"></div>
-  
-  <div id="longestUnbeatenRun"></div>
-  
-   </div>
-  </div>
-  </div>
+      </div>
+      <div class="tourListWrap">
+        <div id="tournamentList"></div>
+      </div>
       
-     </section>
-
-
+    </section>
+    
+    
+    
+    
+    <section id="tournamentPage" style="display:none">
+      
+      <!-- Cup Page -->
+      <section id="cupPage" style="display:none">
+        
+        
+        <!-- SETUP BOX -->
+        <div id="cupBox" style="display:none">
+          
+          <div id="cupTeamView" style="display:none">
+            <div id="cupTeamsContainer">
+              
+            </div>
+          </div>
+          
+          <!-- GROUP STAGE CARD -->
+          <div id="setUpCard">
+            <div class="stageCard">
+              <div class="stageHeader">
+                <label>
+                  <input type="checkbox" id="enableGroups" onchange="toggleGroupSettings()">Enable Group Stage
+                </label>
+              </div>
+              
+              <div id="groupOptions" style="display:none;">
+                <label for="teamsPerGroup">Teams Per Group</label>
+                <select id="teamsPerGroup">
+                  <option value="2">2 Teams</option>
+                  <option value="3">3 Teams</option>
+                  <option value="4" selected>4 Teams</option>
+                  <option value="5">5 Teams</option>
+                  <option value="6">6 Teams</option>
+                  <option value="7">7 Teams</option>
+                  <option value="8">8 Teams</option>
+                  <option value="9">9 Teams</option>
+                  <option value="10">10 Teams</option>
+                  <option value="11">11 Teams</option>
+                  <option value="12">12 Teams</option>
+                </select>
+                
+                <label for="teamsQualify">Teams Qualifying</label>
+                <select id="teamsQualify">
+                
+                  <option value="2" selected>Top 2</option>
+                </select>
+              </div>
+            </div>
+            
+            <!-- KNOCKOUT CARD -->
+            <div class="stageCard">
+              <h3>Knockout Stage</h3>
+              <label for="knockoutRound">Start From</label>
+              <select id="knockoutRound">
+                <option value="16">Round of 16</option>
+                <option value="8" selected>Quarter Final</option>
+                <option value="4">Semi Final</option>
+                <option value="2">Final</option>
+              </select>
+            </div>
+            
+            <!-- ACTIONS -->
+            <div class="cupActions">
+              <button class="btn-create" onclick="generateTournament()"> Create</button>
+            </div>
+            
+          </div>
+        </div>
+        </div>
+        
+        <!-- CUP SCHEDULE & NAVIGATION -->
+        <div id="cupSchedule" style="display:none">
+          
+          
+          <!-- TABLES -->
+          <div id="cupTables"></div>
+        </div>
+        
+        <!-- FULL BRACKET VIEW -->
+        <div id="knockOut" style="display:none">
+          
+          <div id="bracketViewport" style="display:">
+            <div id="bracket-container"></div>
+          </div>
+          
+          <div id="bracketFixturesView">
+            <div id="knockOutFixtureList">
+              
+            </div>
+          </div>
+        </div>
+        
+        
+        <div id="cupFixtures" style="display:none"></div>
+        
+        
+        <div id="knockoutResultModal" class="knockout-result-modal">
+          
+          <div class="knockout-result-card">
+            
+            <div class="knockout-close-btn" onclick="closeKnockoutResultModal()">
+              ✕
+            </div>
+            
+            <div class="knockout-team-block">
+              <span id="knockoutHomeTeam">
+                Team A
+              </span>
+              
+              <input type="text" id="knockoutHomeScore" readonly onclick="setBracketInput(this)">
+            </div>
+            
+            <div class="knockout-vs">
+              VS
+            </div>
+            
+            <div class="knockout-team-block">
+              <span id="knockoutAwayTeam">
+                Team B
+              </span>
+              
+              <input type="text" id="knockoutAwayScore" readonly onclick="setBracketInput(this)">
+            </div>
+            
+            <div class="knockout-pad">
+              
+              <button onclick="bracketPadPress('1')">1</button>
+              <button onclick="bracketPadPress('2')">2</button>
+              <button onclick="bracketPadPress('3')">3</button>
+              
+              <button onclick="bracketPadPress('4')">4</button>
+              <button onclick="bracketPadPress('5')">5</button>
+              <button onclick="bracketPadPress('6')">6</button>
+              
+              <button onclick="bracketPadPress('7')">7</button>
+              <button onclick="bracketPadPress('8')">8</button>
+              <button onclick="bracketPadPress('9')">9</button>
+              
+              <button onclick="bracketPadPress('clear')">
+                ⌫
+              </button>
+              
+              <button onclick="bracketPadPress('0')">0</button>
+              
+              <button class="save-score-btn" onclick="saveBracketResults()">
+                Save
+              </button>
+              
+            </div>
+            
+          </div>
+          
+        </div>
+        
+      </section>
+      
+      
+      
+      
+      <!-- League TABLE PAGE -->
+      <section id="tablePage" style="display:none">
+        
+        <div id="tableView">
+          <div class="table-wrapper">
+            <table id="leagueTable">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Team</th>
+                  <th>P</th>
+                  <th>W</th>
+                  <th>D</th>
+                  <th>L</th>
+                  <th>GF</th>
+                  <th>GA</th>
+                  <th>GD</th>
+                  <th>Pts</th>
+                </tr>
+              </thead>
+              
+              <tbody id="tableBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="teamView" style="display:none">
+          <div id="teamList"></div>
+        </div>
+        
+        <div id="formView" style="display:none">
+          <div id="formContainer"></div>
+        </div>
+        
+        <div id="recordsView" style="display:none">
+          
+          
+          <div id="championPodium"></div>
+          
+          <div id="bestAttack"></div>
+          
+          <div id="bestDefense"></div>
+          
+          <div id="goalDifference"></div>
+          
+          <div id="mostWins"></div>
+          
+          <div id="biggestWin"></div>
+          
+          <div id="highestScoringMatch"></div>
+          
+          <div id="longestWinningRun"></div>
+          
+          <div id="longestUnbeatenRun"></div>
+          
+        </div>
+        </div>
+        </div>
+        
+      </section>
+      
+      
       
       <!-- FIXTURES -->
       
       
       <section class="page" id="fixturePage" style="display:none;">
-      
-      <div class="content">
-        <div id="fixtureScreenshotArea" style="background: #0d1117; padding: 10px; border-radius: 8px;">
-          
-   
-        <h2 id="roundLabel">Fixtures
-        </h2>
-    
-          
-          <div id="fixtureList"></div>
-       
- 
-           
+        
+        <div class="content">
+          <div id="fixtureScreenshotArea" style="background: #0d1117; padding: 10px; border-radius: 8px;">
+            
+            
+            <h2 id="roundLabel">Fixtures
+            </h2>
+            
+            
+            <div id="fixtureList"></div>
+            
+            
+            
       </section>
       
       
@@ -508,350 +534,290 @@
       
       
       
-  
-
-
-
-
-
-
-
-</section>
-
-</main>
-
-
-
-
-
-
-<div id="exportBox">
-
-<div class="data-actions">
-  <button class="btn btn-confirm" onclick="exportSelectedTournaments()" style="display:none" id="confirmExportBtn">
-    ⬇ Export
-  </button>
-  
-  <button class="btn btn-cancel" onclick="exitExportMode()" style="display:none" id="exitExportBtn">
-    ✖ Cancel
-  </button>
-</div>  
-</div> 
-
-
-<input
-  type="file"
-  id="importTournamentInput"
-  accept=".json"
-  onchange="handleImport(event)"
-  style="display:none"
->
-
-
-
-
-
-
-   <div id="setUpTop" style="display:none">
-     <button class="btn-back"
-    onclick="toggleCupView('tables')">
-    ✕ 
-  </button>
-
-   <div class="cupSetup" >
-      <h2>Create Cup Tournament</h2>
-
-
       
-     <div class="btn-cupPage">
-      <button class="btn-add" onclick="toggleCupSetUpView()">
-    <span class="btn-icon">👥</span>
-    <span id="cupToggleText" class="btn-text">Teams</span>
-  </button>
+      
+      
+      
+      
+      
+      
+      
+    </section>
+    
+  </main>
   
-   <button class="badge-info">
-    <span class="btn-icon" id="teamsadded">Teams added: 0</span>
-    <span class="btn-text">Teams added</span>
-  </button>
-
-     </div>
-
-   </div>
-   </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="modal-overlay" id="dateResetModal" style="display:none;">
-  <div class="modal-content">
-    <input id="dateResetHome" placeholder="Home Team Name">
-    <input id="dateResetAway" placeholder="Away Team Name">
-  <label for="dateResetDate" style="color:#666; font-size:14px; display:block; margin-bottom:6px;">
-  Select New Date
-</label>
-<input id="dateResetDate" type="datetime-local">
-    <div class="modal-actions">
-      <button onclick="handleDateReset()">Update</button>
-      <button onclick="closeDateResetModal()">Cancel</button>
-    </div>
-  </div>
-</div>
-
-
-
-
-
-
-<div id="shareModal" class="share-modal">
-  <div class="share-modal-content">
-    
-    <div class="share-header">
-      <span id="shareModalTitle">Share</span>
-      <button onclick="closeShareModal()">✕</button>
-    </div>
-    
-    <div id="shareOptionsContainer" class="share-options"></div>
-    
-  </div>
-</div>
-
-
-<div id="editModal" class="edit-modal">
-  <div class="edit-modal-content">
-    
-    <h3 id="editTitle">Edit Team</h3>
-    
-    <!-- TEAM NAME -->
-    <input type="text" id="editNameInput" placeholder="Team name">
-    
-    <!-- LOGO -->
-    <label class="file-label" for="editLogoInput"> Select New Logo</label>
-    <img id="logoPreview" class="logo-preview" alt="Logo Preview">
-    <input type="file" id="editLogoInput" accept="image/*">
-    
-    <!-- ACTIONS -->
-    <div class="edit-modal-actions">
-      <button class="save-btn" onclick="saveEdit()">Save</button>
-      <button class="cancel-btn" onclick="closeEditModal()">✕ </button>
-    </div>
-    
-  </div>
-</div>
-
-
-<!-- Overlay -->
-<div id="menuOverlay" class="menu-overlay" onclick="toggleMenu()"></div>
-
-<div id="sideMenu" class="side-menu">
-  <div id="menuHeader" class="menu-header"></div>
-</div>
-
-
-<div id="addNewTeam" style="display:none">
-  <div class="add-team-box">
-    <div class="team-input-row">
-      <div class="team-logo-preview-wrap">
-        <img id="teamLogoPreview" class="team-logo-preview" src="" alt="" />
-      </div>
-      <input id="teamNameInput" type="text" placeholder="Enter team name">
-    </div>
-    
-    <label for="teamLogoInput" class="btn-create">Select Logo</label>
-    <input id="teamLogoInput" type="file" accept="image/*" hidden>
-    
-    <div class="btn-row">
-      <button class="btn-add" onclick="handleAddTeam()">Register Team</button>
-      <button class="btn-close" onclick="closeAddTeam()">Close X</button>
-    </div>
-  </div>
-</div>
-
-
-
-
-
-
-
-<div id="alertModal" class="modal-overlay" style="display:none;">
-  <div class="modal-box">
-    
-    <p id="alertText">Alert message goes here</p>
-    
-    <div style="margin-top:15px;">
-      <button onclick="closeAlert()">OK</button>
-    </div>
-
-  </div>
-</div>
-
-
-<div id="inputModal" class="modal-overlay" style="display:none;">
-  <div class="modal-box">
-    <p id="inputTitle">Enter option</p>
-    
-    <input id="modalInput" type="number" placeholder="1 or 2" />
-    
-    <div style="margin-top:15px;">
-      <button onclick="submitModalInput()">OK</button>
-      <button onclick="closeInputModal()">Cancel</button>
-    </div>
-  </div>
-</div>
-
-
-<div id="confirmModal" class="modal-overlay" style="display:none;">
-  <div class="modal-box">
-    <p id="confirmText">Are you sure?</p>
-    
-    <div style="margin-top:15px;">
-      <button onclick="confirmYes()">Yes</button>
-      <button onclick="confirmNo()">No</button>
-    </div>
-  </div>
-</div>
-
-
-<div id="actionModal" class="action-modal"></div>
-
-
-
-<div class="resultRecord" id="resultRecord" style="display:none">
   
-
-  <div class="score-box">
-    <button class="modal-close" onclick="closeResultRecord()">✕</button>
   
-    <h3>Match Result</h3>
+  
+  
+  
+  <div id="exportBox">
     
-    <div class="row">
-      <span id="homeTeam" class="team-label"></span>
-      <input id="homeGoals" type="number" inputmode="none" readonly>
-    </div>
-    
-    <div class="row">
-      <span id="awayTeam" class="team-label"></span>
-      <input id="awayGoals" type="number" inputmode="none" readonly>
-    </div>
-    
-    <div id="numpad" class="numpad">
-      <div class="numpad-grid">
-        <button onclick="pressNum(1)">1</button>
-        <button onclick="pressNum(2)">2</button>
-        <button onclick="pressNum(3)">3</button>
-        
-        <button onclick="pressNum(4)">4</button>
-        <button onclick="pressNum(5)">5</button>
-        <button onclick="pressNum(6)">6</button>
-        
-        <button onclick="pressNum(7)">7</button>
-        <button onclick="pressNum(8)">8</button>
-        <button onclick="pressNum(9)">9</button>
-        
-        <button class="btn-clear" onclick="clearNum()">⌫</button>
-        <button onclick="pressNum(0)">0</button>
-        <button class="btn-save" onclick="handleSetScore()">✓</button>
-      </div>
+    <div class="data-actions">
+      <button class="btn btn-confirm" onclick="exportSelectedTournaments()" style="display:none" id="confirmExportBtn">
+        ⬇ Export
+      </button>
+      
+      <button class="btn btn-cancel" onclick="exitExportMode()" style="display:none" id="exitExportBtn">
+        ✖ Cancel
+      </button>
     </div>
   </div>
   
-</div>  
-
-
-<div id="listModal" class="modal-overlay" style="display:none;">
-  <div class="modal-box list-modal-box">
-    
-    <h3 id="listModalTitle">Select Item</h3>
-    
-    <div id="listModalContent"></div>
-    
-    <button class="btn-delete" onclick="closeListModal()">
-      Cancel
+  
+  <input type="file" id="importTournamentInput" accept=".json" onchange="handleImport(event)" style="display:none">
+  
+  
+  
+  
+  
+  
+  <div id="setUpTop" style="display:none">
+    <button class="btn-back" onclick="toggleCupView('tables')">
+      ✕
     </button>
     
+    <div class="cupSetup">
+      <h2>Create Cup Tournament</h2>
+      
+      
+      
+      <div class="btn-cupPage">
+        <button class="btn-add" onclick="toggleCupSetUpView()">
+          <span class="btn-icon">👥</span>
+          <span id="cupToggleText" class="btn-text">Teams</span>
+        </button>
+        
+        <button class="badge-info">
+          <span class="btn-icon" id="teamsadded">Teams added: 0</span>
+          <span class="btn-text">Teams added</span>
+        </button>
+        
+      </div>
+      
+    </div>
   </div>
-</div>
-
-
-
-
-
-
-
-
- <script src="storage.js"></script>
- <script src="league.js"></script>
- <script src="helper.js"></script> 
- <script src="knockout.js"></script>
- <script src="test.js"></script>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  <div class="modal-overlay" id="dateResetModal" style="display:none;">
+    <div class="modal-content">
+      <input id="dateResetHome" placeholder="Home Team Name">
+      <input id="dateResetAway" placeholder="Away Team Name">
+      <label for="dateResetDate" style="color:#666; font-size:14px; display:block; margin-bottom:6px;">
+        Select New Date
+      </label>
+      <input id="dateResetDate" type="datetime-local">
+      <div class="modal-actions">
+        <button onclick="handleDateReset()">Update</button>
+        <button onclick="closeDateResetModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+  
+  
+  
+  
+  
+  
+  <div id="shareModal" class="share-modal">
+    <div class="share-modal-content">
+      
+      <div class="share-header">
+        <span id="shareModalTitle">Share</span>
+        <button onclick="closeShareModal()">✕</button>
+      </div>
+      
+      <div id="shareOptionsContainer" class="share-options"></div>
+      
+    </div>
+  </div>
+  
+  
+  <div id="editModal" class="edit-modal">
+    <div class="edit-modal-content">
+      
+      <h3 id="editTitle">Edit Team</h3>
+      
+      <!-- TEAM NAME -->
+      <input type="text" id="editNameInput" placeholder="Team name">
+      
+      <!-- LOGO -->
+      <label class="file-label" for="editLogoInput"> Select New Logo</label>
+      <img id="logoPreview" class="logo-preview" alt="Logo Preview">
+      <input type="file" id="editLogoInput" accept="image/*">
+      
+      <!-- ACTIONS -->
+      <div class="edit-modal-actions">
+        <button class="save-btn" onclick="saveEdit()">Save</button>
+        <button class="cancel-btn" onclick="closeEditModal()">✕ </button>
+      </div>
+      
+    </div>
+  </div>
+  
+  
+  <!-- Overlay -->
+  <div id="menuOverlay" class="menu-overlay" onclick="toggleMenu()"></div>
+  
+  <div id="sideMenu" class="side-menu">
+    <div id="menuHeader" class="menu-header"></div>
+  </div>
+  
+  
+  <div id="addNewTeam" style="display:none">
+    <div class="add-team-box">
+      <div class="team-input-row">
+        <div class="team-logo-preview-wrap">
+          <img id="teamLogoPreview" class="team-logo-preview" src="" alt="" />
+        </div>
+        <input id="teamNameInput" type="text" placeholder="Enter team name">
+      </div>
+      
+      <label for="teamLogoInput" class="btn-create">Select Logo</label>
+      <input id="teamLogoInput" type="file" accept="image/*" hidden>
+      
+      <div class="btn-row">
+        <button class="btn-add" onclick="handleAddTeam()">Register Team</button>
+        <button class="btn-close" onclick="closeAddTeam()">Close X</button>
+      </div>
+    </div>
+  </div>
+  
+  
+  
+  
+  
+  
+  
+  <div id="alertModal" class="modal-overlay" style="display:none;">
+    <div class="modal-box">
+      
+      <p id="alertText">Alert message goes here</p>
+      
+      <div style="margin-top:15px;">
+        <button onclick="closeAlert()">OK</button>
+      </div>
+      
+    </div>
+  </div>
+  
+  
+  <div id="inputModal" class="modal-overlay" style="display:none;">
+    <div class="modal-box">
+      <p id="inputTitle">Enter option</p>
+      
+      <input id="modalInput" type="number" placeholder="1 or 2" />
+      
+      <div style="margin-top:15px;">
+        <button onclick="submitModalInput()">OK</button>
+        <button onclick="closeInputModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+  
+  
+  <div id="confirmModal" class="modal-overlay" style="display:none;">
+    <div class="modal-box">
+      <p id="confirmText">Are you sure?</p>
+      
+      <div style="margin-top:15px;">
+        <button onclick="confirmYes()">Yes</button>
+        <button onclick="confirmNo()">No</button>
+      </div>
+    </div>
+  </div>
+  
+  
+  <div id="actionModal" class="action-modal"></div>
+  
+  
+  
+  <div class="resultRecord" id="resultRecord" style="display:none">
+    
+    
+    <div class="score-box">
+      <button class="modal-close" onclick="closeResultRecord()">✕</button>
+      
+      <h3>Match Result</h3>
+      
+      <div class="row">
+        <span id="homeTeam" class="team-label"></span>
+        <input id="homeGoals" type="number" inputmode="none" readonly>
+      </div>
+      
+      <div class="row">
+        <span id="awayTeam" class="team-label"></span>
+        <input id="awayGoals" type="number" inputmode="none" readonly>
+      </div>
+      
+      <div id="numpad" class="numpad">
+        <div class="numpad-grid">
+          <button onclick="pressNum(1)">1</button>
+          <button onclick="pressNum(2)">2</button>
+          <button onclick="pressNum(3)">3</button>
+          
+          <button onclick="pressNum(4)">4</button>
+          <button onclick="pressNum(5)">5</button>
+          <button onclick="pressNum(6)">6</button>
+          
+          <button onclick="pressNum(7)">7</button>
+          <button onclick="pressNum(8)">8</button>
+          <button onclick="pressNum(9)">9</button>
+          
+          <button class="btn-clear" onclick="clearNum()">⌫</button>
+          <button onclick="pressNum(0)">0</button>
+          <button class="btn-save" onclick="handleSetScore()">✓</button>
+        </div>
+      </div>
+    </div>
+    
+  </div>
+  
+  
+  <div id="listModal" class="modal-overlay" style="display:none;">
+    <div class="modal-box list-modal-box">
+      
+      <h3 id="listModalTitle">Select Item</h3>
+      
+      <div id="listModalContent"></div>
+      
+      <button class="btn-delete" onclick="closeListModal()">
+        Cancel
+      </button>
+      
+    </div>
+  </div>
+  
+  
+  
+  
+  
+  
+  
+  
+  <script src="storage.js"></script>
+  <script src="league.js"></script>
+  <script src="helper.js"></script>
+  <script src="knockout.js"></script>
+  <script src="test.js"></script>
 </body>
 
 </html>

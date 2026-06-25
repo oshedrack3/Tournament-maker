@@ -32,7 +32,7 @@ function updateTournament(updatedTournament) {
     console.error("❌ updateTournament ERROR: Invalid tournament object");
     return;
   }
-
+  
   const tournaments = getTournaments();
   const index = tournaments.findIndex(
     t => String(t.id) === String(updatedTournament.id)
@@ -96,7 +96,6 @@ let currentTournamentId = null;
 function getCurrentTournamentId() {
   return currentTournamentId;
 }
-
 
 function setCurrentTournamentId(id) {
   currentTournamentId = id ? String(id) : null;

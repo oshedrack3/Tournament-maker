@@ -152,7 +152,6 @@ function getLogoFromIndexedDB(key) {
 }
 
 
-
 async function renderTeams(containerId = "teamList") {
   const tournament = getCurrentTournament();
   if (!tournament) return;
@@ -191,7 +190,7 @@ async function renderTeams(containerId = "teamList") {
           <span>${team}</span>
         </div>
       </div>
-    `;    
+    `;
     
     if (logoKey) {
       getLogoFromIndexedDB(logoKey).then(base64Logo => {
@@ -207,18 +206,18 @@ async function renderTeams(containerId = "teamList") {
         }
       }).catch(err => console.error("Error loading logo:", err));
     }
-
+    
     let startX = 0;
     let currentX = 0;
     let isSwiping = false;
-
+    
     const content = div.querySelector(".team-content");
-
+    
     const start = (x) => {
       startX = x;
       isSwiping = true;
     };
-
+    
     const move = (x) => {
       if (!isSwiping) return;
       currentX = x;
@@ -227,7 +226,7 @@ async function renderTeams(containerId = "teamList") {
         content.style.transform = `translateX(${diff}px)`;
       }
     };
-
+    
     const end = () => {
       if (!isSwiping) return;
       isSwiping = false;
@@ -238,13 +237,13 @@ async function renderTeams(containerId = "teamList") {
         content.style.transform = "translateX(0)";
       }
     };
-
+    
     div.addEventListener("touchstart", (e) => start(e.touches[0].clientX));
     div.addEventListener("mousedown", (e) => start(e.clientX));
-
+    
     div.addEventListener("touchmove", (e) => move(e.touches[0].clientX));
     div.addEventListener("mousemove", (e) => move(e.clientX));
-
+    
     div.addEventListener("touchend", end);
     div.addEventListener("mouseup", end);
     div.addEventListener("mouseleave", end);
@@ -252,7 +251,6 @@ async function renderTeams(containerId = "teamList") {
     container.appendChild(div);
   });
 }
-
 
 
 function setMatchResult(home, away, hg, ag) {
@@ -285,12 +283,10 @@ function setMatchResult(home, away, hg, ag) {
 }
 
 
-
-
 function getStableMatchOrder(matches) {
   return [...matches]
     .filter(m => m.played)
-    .sort((a, b) => (a.playedAt || 0) - (b.playedAt || 0)); 
+    .sort((a, b) => (a.playedAt || 0) - (b.playedAt || 0));
 }
 
 function updateStreaks(tournament) {
@@ -322,7 +318,6 @@ function updateStreaks(tournament) {
     best: data.best
   }));
 }
-
 
 
 function backfillPlayedAtOnce(tournament) {
@@ -375,7 +370,7 @@ function getLongestUnbeatenRuns(matches) {
     } else {
       streaks[m.home].current = 0;
     }
-   
+    
     if (m.awayGoals >= m.homeGoals) {
       streaks[m.away].current++;
     } else {
@@ -388,7 +383,7 @@ function getLongestUnbeatenRuns(matches) {
   });
   
   return Object.entries(streaks)
-    .map(([team, data]) => [team, data.best]) 
+    .map(([team, data]) => [team, data.best])
     .sort((a, b) => b[1] - a[1]);
 }
 
@@ -416,8 +411,6 @@ function resetMatchPlayedAt(tournament, homeTeam, awayTeam, newDate) {
 }
 
 
-
-
 function openDateResetModal(homeTeam = '', awayTeam = '') {
   const modal = document.getElementById('dateResetModal');
   if (!modal) {
@@ -425,7 +418,7 @@ function openDateResetModal(homeTeam = '', awayTeam = '') {
     return;
   }
   
- 
+  
   document.getElementById('dateResetHome').value = homeTeam || '';
   document.getElementById('dateResetAway').value = awayTeam || '';
   document.getElementById('dateResetDate').value = '';
@@ -458,12 +451,12 @@ function handleDateReset() {
     awayTeam = prompt('Enter Away Team name:');
     if (!awayTeam) return;
     
-    // Update the inputs so user sees what was entered
+    
     document.getElementById('dateResetHome').value = homeTeam.trim();
     document.getElementById('dateResetAway').value = awayTeam.trim();
   }
   
-  // Validate match exists
+  
   const matchExists = tournament.matches.some(m =>
     m.home.toLowerCase() === homeTeam.toLowerCase() &&
     m.away.toLowerCase() === awayTeam.toLowerCase()
@@ -487,3 +480,566 @@ function handleDateReset() {
 function closeDateResetModal() {
   document.getElementById('dateResetModal').style.display = 'none';
 }
+
+
+
+
+async function tournamentCreator() {
+  const input = document.getElementById("tournamentNameInput");
+  const formatInput = document.getElementById("tournamentFormatInput");
+  const startDateInput = document.getElementById("tournamentStartDate");
+  const endDateInput = document.getElementById("tournamentEndDate");
+  
+  const name = input.value.trim();
+  const format = formatInput.value;
+  const startDate = startDateInput.value;
+  const endDate = endDateInput.value;
+  const matchDays = getSelectedMatchDays();
+  
+  
+  if (!name) {
+    showAlert("Enter tournament name");
+    return;
+  }
+  
+  if (!startDate || !endDate) {
+    showAlert("Select start and end dates");
+    return;
+  }
+  
+  if (new Date(startDate) > new Date(endDate)) {
+    showAlert("Start date must be before end date");
+    return;
+  }
+  
+  if (!matchDays.length) {
+    showAlert("Select at least one match day");
+    return;
+  }
+  
+  
+  matchDays.sort((a, b) => a - b);
+  
+  const id = Date.now().toString();
+  
+  
+  const newTournament = {
+    id,
+    name,
+    format,
+    createdAt: Date.now(),
+    
+    
+    startDate,
+    endDate,
+    matchDays,
+    
+    
+    teams: [],
+    matches: [],
+    table: [],
+    groups: [],
+    teamLogos: {},
+    groupMatches: [],
+    qualifiedTeams: [],
+    knockoutMatches: [],
+    
+    settings: {
+      knockoutSize: 0,
+      teamsPerGroup: 0,
+      qualifiersPerGroup: 0
+    }
+  };
+  
+  await saveTournament(newTournament);
+  
+  
+  input.value = "";
+  startDateInput.value = "";
+  endDateInput.value = "";
+  
+  document
+    .querySelectorAll('#matchDaysSelector input[type="checkbox"]')
+    .forEach(cb => (cb.checked = false));
+  
+  hideCreateTournament();
+  showAlert("Tournament created!");
+  
+  if (typeof renderTournamentList === "function") {
+    renderTournamentList();
+  }
+}
+
+
+
+
+function getSelectedMatchDays() {
+  const checkboxes = document.querySelectorAll(
+    '#matchDaysSelector input[type="checkbox"]:checked'
+  );
+  
+  return Array.from(checkboxes).map(cb => Number(cb.value));
+}
+
+
+
+function getMatchDates(startDate, endDate, matchDays) {
+  const dates = [];
+  
+  let current = new Date(startDate);
+  const end = new Date(endDate);
+  
+  if (isNaN(current) || isNaN(end)) {
+    return [];
+  }
+  
+  while (current <= end) {
+    if (matchDays.includes(current.getDay())) {
+      dates.push(new Date(current));
+    }
+    current.setDate(current.getDate() + 1);
+  }
+  
+  return dates;
+}
+
+
+function assignRoundDatesSmart(matches, tournament) {
+  let matchDays = tournament.matchDays;
+  const startDate = tournament.startDate;
+  const endDate = tournament.endDate;
+  
+  if (!matchDays || matchDays.length === 0) {
+    showAlert("No valid match days selected");
+    return matches;
+  }
+  
+  const matchDates = getMatchDates(startDate, endDate, matchDays);
+  const totalRounds = Math.max(...matches.map(m => m.round));
+  
+  if (matchDates.length === 0) {
+    showAlert("No valid match days selected");
+    return matches;
+  }
+  
+  let warning = false;
+  
+  const schedule = matchDates.map(date => ({
+    date,
+    rounds: []
+  }));
+  
+  let round = 1;
+  
+  
+  const extraRounds = totalRounds - matchDates.length;
+  
+  
+  const indices = [...Array(schedule.length).keys()];
+  for (let i = indices.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [indices[i], indices[j]] = [indices[j], indices[i]];
+  }
+  
+  const doubleRoundDays = new Set(indices.slice(0, Math.max(0, extraRounds)));
+  
+  for (let i = 0; i < schedule.length && round <= totalRounds; i++) {
+    schedule[i].rounds.push(round);
+    round++;
+    
+    if (doubleRoundDays.has(i) && round <= totalRounds) {
+      schedule[i].rounds.push(round);
+      round++;
+      warning = true;
+    }
+  }
+  
+  const roundToDateMap = {};
+  
+  schedule.forEach(slot => {
+    slot.rounds.forEach(r => {
+      roundToDateMap[r] = slot.date;
+    });
+  });
+  
+  const updatedMatches = matches.map(match => {
+    const date = roundToDateMap[match.round];
+    
+    return {
+      ...match,
+      scheduledAt: date ? date.toISOString() : null,
+      playedAt: null
+    };
+  });
+  
+  if (warning) {
+    showAlert(
+      "⚠ Schedule adjusted: some days have two consecutive rounds due to limited match days."
+    );
+  }
+  
+  return updatedMatches;
+}
+
+
+
+
+
+
+function assignKnockoutDates(matches, tournament) {
+  if (!matches?.length) return matches;
+  
+  const matchDays = tournament.matchDays;
+  const startDate = tournament.startDate;
+  
+  if (!matchDays?.length) {
+    showAlert("No valid match days selected");
+    return matches;
+  }
+  
+  let knockStart = new Date(startDate);
+  const groupsEnabled = tournament.settings?.enableGroups;
+  
+  if (groupsEnabled && tournament.groupMatches?.length) {
+    const lastGroupDate = tournament.groupMatches.reduce((max, m) => {
+      const d = m.scheduledAt ? new Date(m.scheduledAt) : null;
+      return d && d > max ? d : max;
+    }, new Date(0));
+    
+    if (lastGroupDate.getTime() > 0) {
+      knockStart = new Date(lastGroupDate);
+      knockStart.setDate(knockStart.getDate() + 1);
+    }
+  }
+  
+  const farFuture = new Date(knockStart);
+  farFuture.setFullYear(farFuture.getFullYear() + 1);
+  
+  const matchDates = getMatchDates(knockStart, farFuture, matchDays);
+  const totalRounds = Math.max(...matches.map(m => m.roundIndex));
+  
+  if (matchDates.length === 0) {
+    showAlert("No valid match days selected");
+    return matches;
+  }
+  
+  const schedule = matchDates.map(date => ({ date, rounds: [] }));
+  
+  let round = 1;
+  let warning = false;
+  
+  for (let i = 0; i < schedule.length && round <= totalRounds; i++) {
+    schedule[i].rounds.push(round);
+    round++;
+  }
+  
+  if (round <= totalRounds) {
+    let lastDate = schedule[schedule.length - 1].date;
+    while (round <= totalRounds) {
+      const nextSearchStart = new Date(lastDate);
+      nextSearchStart.setDate(nextSearchStart.getDate() + 1);
+      
+      const nextValidDates = getMatchDates(nextSearchStart, farFuture, matchDays);
+      if (!nextValidDates.length) break;
+      
+      const nextValid = nextValidDates[0];
+      schedule.push({ date: nextValid, rounds: [round] });
+      lastDate = nextValid;
+      round++;
+      warning = true;
+    }
+  }
+  
+  const roundToDateMap = {};
+  schedule.forEach(slot => {
+    slot.rounds.forEach(r => {
+      roundToDateMap[r] = slot.date;
+    });
+  });
+  
+  const updatedMatches = matches.map(match => {
+    const date = roundToDateMap[match.roundIndex];
+    return {
+      ...match,
+      scheduledAt: date ? date.toISOString() : null,
+      playedAt: null
+    };
+  });
+  
+  if (warning) {
+    showAlert("⚠ Schedule extended beyond tournament end date on your selected match days.");
+  }
+  
+  return updatedMatches;
+}
+
+
+
+function renderKnockoutFixtures(roundIndex = 1) {
+  currentKnockoutRoundIndex = roundIndex;
+  
+  const tournament = getCurrentTournament();
+  if (!tournament || !tournament.knockoutMatches) return;
+  
+  const container = document.getElementById("knockOutFixtureList");
+  if (!container) return;
+  container.innerHTML = "";
+  
+  const matches = tournament.knockoutMatches.filter(
+    m => (m.roundIndex || 1) === roundIndex
+  );
+  
+  if (!matches.length) {
+    container.innerHTML = `<p class="emptyText">Group stage in progress.....<br> Knockout Matches will appear here as soon as group stage is completed</p>`;
+    return;
+  }
+  
+  const getTeamName = (team) => {
+    if (!team || team === "BYE") return "Awaiting Winner";
+    if (typeof team === "string") return team;
+    return team.name || "Awaiting Winner";
+  };
+  
+  const roundSize =
+    tournament.settings.knockoutSize / Math.pow(2, roundIndex - 1);
+  
+  const roundName =
+    roundSize === 8 ? "Quarter-Finals" :
+    roundSize === 4 ? "Semi-Finals" :
+    roundSize === 2 ? "Final" :
+    `Round of ${roundSize}`;
+  
+  const roundLabel = document.getElementById("roundLabel");
+  if (roundLabel) roundLabel.innerText = roundName;
+  
+  const header = document.createElement("div");
+  header.className = "round-header";
+  header.innerText = roundName;
+  container.appendChild(header);
+  
+  matches.forEach(match => {
+    const homeName = getTeamName(match.home);
+    const awayName = getTeamName(match.away);
+    
+    const div = document.createElement("div");
+    div.className = `fixture-row ${match.played ? "played" : "not-played"}`;
+    
+    const homeLogoKey = tournament.teamLogos?.[homeName];
+    const awayLogoKey = tournament.teamLogos?.[awayName];
+    
+    div.innerHTML = `
+      <div class="fixture-label">
+        ${tournament.name || "Tournament"} • ${roundName}
+      </div>
+      
+      <div class="fixture-row-content">
+        <div class="fixture-teams-stack">
+          <div class="team-row-item team-home-container">
+            <div class="fixture-team-logo-placeholder">?</div>
+            <span class="fixture-team-name">${homeName}</span>
+          </div>
+          
+          <div class="team-row-item team-away-container">
+            <div class="fixture-team-logo-placeholder">?</div>
+            <span class="fixture-team-name">${awayName}</span>
+          </div>
+        </div>
+        
+        <div class="fixture-status-pane">
+          ${match.played
+            ? `
+              <div class="score-stack">
+                <span class="score-badge played">${match.homeGoals}</span>
+                <span class="ft-badge">Full Time</span>
+                <span class="score-badge played">${match.awayGoals}</span>
+              </div>
+            `
+            : `
+              <span class="vs-text-alt">
+                ${match.scheduledAt ? formatMatchDay(match.scheduledAt) : "Vs"}
+              </span>
+            `
+          }
+        </div>
+      </div>
+      
+      ${match.played ? `<div class="match-playedTime">${formatRecordedTime(match.playedAt)}</div>` : ""}
+    `;
+    
+    if (homeLogoKey && homeName !== "Awaiting Winner") {
+      getLogoFromIndexedDB(homeLogoKey).then(base64Logo => {
+        const homeRow = div.querySelector(".team-home-container");
+        const placeholder = homeRow?.querySelector(".fixture-team-logo-placeholder");
+        if (base64Logo && homeRow && placeholder) {
+          const img = document.createElement("img");
+          img.className = "fixture-team-logo";
+          img.src = base64Logo;
+          homeRow.replaceChild(img, placeholder);
+        }
+      });
+    }
+    
+    if (awayLogoKey && awayName !== "Awaiting Winner") {
+      getLogoFromIndexedDB(awayLogoKey).then(base64Logo => {
+        const awayRow = div.querySelector(".team-away-container");
+        const placeholder = awayRow?.querySelector(".fixture-team-logo-placeholder");
+        if (base64Logo && awayRow && placeholder) {
+          const img = document.createElement("img");
+          img.className = "fixture-team-logo";
+          img.src = base64Logo;
+          awayRow.replaceChild(img, placeholder);
+        }
+      });
+    }
+    
+    div.style.cursor = "pointer";
+    div.addEventListener("click", () => {
+      openCupResultRecord(match);
+    });
+    
+    container.appendChild(div);
+  });
+}
+
+
+
+let currentKnockoutRoundIndex = 1;
+
+function toggleBracketMode(mode) {
+  document
+    .querySelectorAll(".bracketTopActions .bracket-tab")
+    .forEach(btn => btn.classList.remove("active"));
+  
+  const bracketView = document.getElementById("bracketViewport");
+  const fixturesView = document.getElementById("bracketFixturesView");
+  
+  if (mode === "bracket") {
+    bracketView.style.display = "block";
+    fixturesView.style.display = "none";
+    
+    renderFullBracket();
+    
+    const tabs = document.querySelectorAll(".bracketTopActions .bracket-tab");
+    if (tabs[1]) tabs[1].classList.add("active");
+  }
+  
+  else {
+    bracketView.style.display = "none";
+    fixturesView.style.display = "block";
+    
+    renderKnockoutFixtures();
+    
+    const tabs = document.querySelectorAll(".bracketTopActions .bracket-tab");
+    if (tabs[0]) tabs[0].classList.add("active");
+  }
+}
+
+
+function enableKnockoutSwipe() {
+  const container = document.getElementById("knockOutFixtureList");
+  if (!container) return;
+  
+  let startX = 0;
+  let endX = 0;
+  
+  container.addEventListener("touchstart", e => {
+    startX = e.changedTouches[0].screenX;
+  });
+  
+  container.addEventListener("touchend", e => {
+    endX = e.changedTouches[0].screenX;
+    handleSwipe();
+  });
+  
+  function handleSwipe() {
+    const diff = startX - endX;
+    const threshold = 50;
+    
+    const tournament = getCurrentTournament();
+    const maxRounds = Math.max(
+      ...tournament.knockoutMatches.map(m => m.roundIndex || 1)
+    );
+    
+    // swipe left → next
+    if (diff > threshold && currentKnockoutRoundIndex < maxRounds) {
+      renderKnockoutFixtures(currentKnockoutRoundIndex + 1);
+    }
+    
+    // swipe right → previous
+    if (diff < -threshold && currentKnockoutRoundIndex > 1) {
+      renderKnockoutFixtures(currentKnockoutRoundIndex - 1);
+    }
+  }
+}
+
+
+function shareKnockoutFixtures() {
+  const element = document.getElementById('knockOutFixtureList');
+  const titleText = document.getElementById('roundLabel')?.textContent || 'Knockout Fixtures';
+  const fileName = titleText.replace(/\s/g, '-');
+  
+  if (!element) {
+    showAlert('Knockout fixture list not found!');
+    return;
+  }
+
+  const options = {
+    backgroundColor: '#0d1117',
+    useCORS: true,
+    allowTaint: true,
+    logging: false,
+    imageTimeout: 0,
+    scale: Math.min(4, window.devicePixelRatio * 2),
+    width: element.scrollWidth,
+    height: element.scrollHeight,
+    scrollX: 0,
+    scrollY: 0,
+    
+    onclone: (doc) => {
+      const cloned = doc.getElementById('knockOutFixtureList');
+      if (cloned) {
+        cloned.style.background = '#0d1117';
+        cloned.style.overflow = 'visible';
+        cloned.style.height = 'auto';
+        cloned.style.width = '100%';
+
+        cloned.querySelectorAll('*').forEach(el => {
+          el.style.webkitFontSmoothing = 'antialiased';
+          el.style.textRendering = 'geometricPrecision';
+        });
+      }
+    }
+  };
+
+  html2canvas(element, options).then(canvas => {
+    canvas.toBlob(blob => {
+      if (!blob) {
+        show('Failed to process screenshot image.');
+        return;
+      }
+
+      const file = new File(
+        [blob],
+        `knockout-${fileName}.png`,
+        { type: 'image/png' }
+      );
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({
+          files: [file],
+          title: titleText,
+          text: `Check out the latest ${titleText}!`
+        }).catch(err => console.log('Share dismissed', err));
+      } else {
+        const link = document.createElement('a');
+        link.download = `knockout-${fileName}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      }
+    }, 'image/png');
+  }).catch(err => {
+    console.error(err);
+    showAlert('Could not take screenshot');
+  });
+}
+

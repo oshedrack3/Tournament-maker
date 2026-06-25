@@ -1,30 +1,30 @@
 function generateTournament() {
   const enableGroups = document.getElementById("enableGroups").checked;
-
+  
   const tournament = getCurrentTournament();
   if (!tournament) return;
-
+  
   const teams = [...tournament.teams];
   if (teams.length < 2) {
     showAlert("❌ Add at least 2 teams");
     return;
   }
-
+  
   const teamsPerGroup = parseInt(document.getElementById("teamsPerGroup").value) || 4;
   const teamsQualify = parseInt(document.getElementById("teamsQualify").value) || 2;
   const knockoutSize = parseInt(document.getElementById("knockoutRound").value);
-
+  
   tournament.settings = {
     enableGroups,
     teamsPerGroup,
     teamsQualify,
     knockoutSize
   };
-
+  
   if (enableGroups) {
     const totalGroups = Math.ceil(teams.length / teamsPerGroup);
     const totalQualifiers = totalGroups * teamsQualify;
-
+    
     if (totalQualifiers !== knockoutSize) {
       showAlert(`⚠️ Bracket Imbalance!\n\nYour group setup yields ${totalQualifiers} qualifying teams, but your bracket size requires exactly ${knockoutSize}.\n\nAdjust your group sizes or qualified slots.`);
       return;
@@ -35,47 +35,43 @@ function generateTournament() {
       return;
     }
   }
-tournament.knockoutMatches = [];
-tournament.qualifiedTeams = [];
-tournament.groupStageComplete = false;
-
+  tournament.knockoutMatches = [];
+  tournament.qualifiedTeams = [];
+  tournament.groupStageComplete = false;
+  
   tournament.matches = [];
   tournament.groups = [];
   tournament.knockout = null;
   
-
+  
   if (enableGroups) {
     generateGroupStage(tournament);
   } else {
     generateDirectKnockOut(tournament);
   }
-
+  
   updateTournament(tournament);
   renderFixtures();
   toggleCupView('table')
   showActionModal("✅ Tournament Generated", "success");
 }
- 
- 
- 
- 
- 
- 
- 
+
+
+
 function validateTournamentSetup(tournament, settings) {
   const teams = tournament.teams || [];
-
+  
   if (teams.length < 2) {
     return {
       valid: false,
       message: "❌ Add at least 2 teams"
     };
   }
-
+  
   if (settings.enableGroups) {
     const totalGroups = Math.ceil(teams.length / settings.teamsPerGroup);
     const totalQualifiers = totalGroups * settings.teamsQualify;
-
+    
     if (totalQualifiers !== settings.knockoutSize) {
       return {
         valid: false,
@@ -90,7 +86,7 @@ function validateTournamentSetup(tournament, settings) {
       };
     }
   }
-
+  
   return { valid: true };
 }
 
@@ -107,58 +103,55 @@ function validateTournamentSetup(
   tournament,
   settings
 ) {
-
+  
   const teams =
     tournament.teams || [];
-
+  
   if (teams.length < 2) {
-
+    
     return {
       valid: false,
-      message:
-        "❌ Add at least 2 teams"
+      message: "❌ Add at least 2 teams"
     };
   }
-
+  
   if (settings.enableGroups) {
-
+    
     const totalGroups =
       Math.ceil(
         teams.length /
         settings.teamsPerGroup
       );
-
+    
     const totalQualifiers =
       totalGroups *
       settings.teamsQualify;
-
+    
     if (
       totalQualifiers !==
       settings.knockoutSize
     ) {
-
+      
       return {
         valid: false,
-        message:
-          `⚠️ Bracket Imbalance!\n\nYour group setup yields ${totalQualifiers} qualifying teams, but your bracket size requires exactly ${settings.knockoutSize}.`
+        message: `⚠️ Bracket Imbalance!\n\nYour group setup yields ${totalQualifiers} qualifying teams, but your bracket size requires exactly ${settings.knockoutSize}.`
       };
     }
-
+    
   } else {
-
+    
     if (
       teams.length !==
       settings.knockoutSize
     ) {
-
+      
       return {
         valid: false,
-        message:
-          `⚠️ Team Count Mismatch!\n\nYou selected a ${settings.knockoutSize}-team bracket but currently have ${teams.length} teams.`
+        message: `⚠️ Team Count Mismatch!\n\nYou selected a ${settings.knockoutSize}-team bracket but currently have ${teams.length} teams.`
       };
     }
   }
-
+  
   return {
     valid: true
   };
@@ -167,34 +160,30 @@ function validateTournamentSetup(
 
 
 function getTournamentSettings() {
-
+  
   return {
-
-    enableGroups:
+    
+    enableGroups: document.getElementById(
+      "enableGroups"
+    ).checked,
+    
+    teamsPerGroup: parseInt(
       document.getElementById(
-        "enableGroups"
-      ).checked,
-
-    teamsPerGroup:
-      parseInt(
-        document.getElementById(
-          "teamsPerGroup"
-        ).value
-      ) || 4,
-
-    teamsQualify:
-      parseInt(
-        document.getElementById(
-          "teamsQualify"
-        ).value
-      ) || 2,
-
-    knockoutSize:
-      parseInt(
-        document.getElementById(
-          "knockoutRound"
-        ).value
-      )
+        "teamsPerGroup"
+      ).value
+    ) || 4,
+    
+    teamsQualify: parseInt(
+      document.getElementById(
+        "teamsQualify"
+      ).value
+    ) || 2,
+    
+    knockoutSize: parseInt(
+      document.getElementById(
+        "knockoutRound"
+      ).value
+    )
   };
 }
 
@@ -241,6 +230,9 @@ function renderCupFixtures() {
         ${matches.map((match, i) => {
           return `
             <div class="fixture-row" data-index="${i}">
+          <div class="fixture-label">
+  ${tournament.name || "Tournament"} • ${group.name} • R${String(currentRound).padStart(2, "0")}
+</div>
               <div class="fixture-row-content">
                 <div class="fixture-teams-stack">
                   <div class="team-row-item team-home-${group.name.replace(/\s+/g, '')}-${i}">
@@ -259,24 +251,49 @@ function renderCupFixtures() {
                     ? `
                       <div class="score-stack">
                         <span class="score-badge played">${match.homeGoals}</span>
+                        <span class="ft-badge">Full Time</span>
+       
                         <span class="score-badge played">${match.awayGoals}</span>
                       </div>
                     `
-                    : `<span class="vs-text-alt">VS</span>`
-                  }
+               : `<span class="vs-text-alt">
+${formatMatchDay(match.scheduledAt)}
+   </span>`
+  }
                 </div>
               </div>
+              ${
+
+    match.played
+
+      ? `
+
+        <div class="cup-playedTime">
+
+          ${formatRecordedTime(match.playedAt)}
+
+        </div>
+
+      `
+
+      : ""
+
+  }
+
             </div>
+            
+            
           `;
         }).join("")}
       </div>
+      
     `;
-   
+    
     matches.forEach((match, i) => {
       const homeLogoKey = tournament.teamLogos?.[match.home];
       const awayLogoKey = tournament.teamLogos?.[match.away];
       const groupClean = group.name.replace(/\s+/g, '');
-
+      
       if (homeLogoKey) {
         getLogoFromIndexedDB(homeLogoKey).then(base64Logo => {
           const homeRow = groupCard.querySelector(`.team-home-${groupClean}-${i}`);
@@ -289,7 +306,7 @@ function renderCupFixtures() {
           }
         }).catch(err => console.error("Error loading cup home logo:", err));
       }
-
+      
       if (awayLogoKey) {
         getLogoFromIndexedDB(awayLogoKey).then(base64Logo => {
           const awayRow = groupCard.querySelector(`.team-away-${groupClean}-${i}`);
@@ -371,7 +388,8 @@ function toggleCupView(view) {
     bracketControl.style.display = "flex";
     cupTab.style.display = "flex";
     
-    renderFullBracket();
+    toggleBracketMode("fixtures");
+    enableKnockoutSwipe();
     
     const tabs = document.querySelectorAll(".cup-tab");
     if (tabs[2]) tabs[2].classList.add("active");
@@ -438,133 +456,125 @@ function toggleGroupSettings() {
 function generateGroupStage(
   tournament
 ) {
-
+  
   const {
     teamsPerGroup
   } = tournament.settings;
-
-  let teams =
-    [...tournament.teams];
-
+  
+  let teams = [...tournament.teams];
+  
   teams =
     teams.sort(
       () => Math.random() - 0.5
     );
-
+  
   
   const groups = [];
-
+  
   const groupMatches = [];
-
+  
   
   const totalGroups =
     Math.ceil(
       teams.length /
       teamsPerGroup
     );
-
+  
   let groupLetterCode = 65;
-
+  
   
   for (
-    let g = 0;
-    g < totalGroups;
-    g++
+    let g = 0; g < totalGroups; g++
   ) {
-
+    
     let groupTeams =
       teams.slice(
         g * teamsPerGroup,
         (g + 1) * teamsPerGroup
       );
-
+    
     
     const groupName =
       `Group ${String.fromCharCode(groupLetterCode)}`;
-
+    
     groupLetterCode++;
-
+    
     
     groups.push({
-
+      
       name: groupName,
-
+      
       index: g,
-
+      
       teams: [...groupTeams]
     });
-
+    
     
     if (
       groupTeams.length % 2 !== 0
     ) {
-
+      
       groupTeams.push("BYE");
     }
-
+    
     
     const numTeams =
       groupTeams.length;
-
+    
     const totalRounds =
       numTeams - 1;
-
+    
     const halfSize =
       numTeams / 2;
-
+    
     
     for (
-      let round = 0;
-      round < totalRounds;
-      round++
+      let round = 0; round < totalRounds; round++
     ) {
-
+      
       for (
-        let i = 0;
-        i < halfSize;
-        i++
+        let i = 0; i < halfSize; i++
       ) {
-
+        
         const home =
           groupTeams[i];
-
+        
         const away =
           groupTeams[
             numTeams - 1 - i
           ];
-
+        
         
         if (
           home === "BYE" ||
           away === "BYE"
         ) continue;
-
+        
         
         groupMatches.push({
-
-          id:
-            `GR_${groupName}_R${round + 1}_M${i + 1}`,
-
+          
+          id: `GR_${groupName}_R${round + 1}_M${i + 1}`,
+          
           type: "group",
-
+          
           group: groupName,
-
+          
           groupIndex: g,
-
+          
           round: round + 1,
-
+          
           home,
-
+          
           away,
-
+          
           homeGoals: null,
-
+          
           awayGoals: null,
-
+          
           played: false
         });
       }
-
+      
       
       groupTeams.splice(
         1,
@@ -573,18 +583,18 @@ function generateGroupStage(
       );
     }
   }
-
+  
   
   tournament.groups =
     groups;
-
+  
   generateGroupTables(tournament);
   tournament.groupMatches =
     groupMatches;
-
+  tournament.groupMatches = assignRoundDatesSmart(groupMatches, tournament);
   
   tournament.cupRound = 1;
-
+  
   
   return tournament;
 }
@@ -665,8 +675,11 @@ function renderFullBracket() {
       
       const homeLogoKey = tournament.teamLogos?.[homeName];
       const awayLogoKey = tournament.teamLogos?.[awayName];
-
+      
       card.innerHTML = `
+   <div class="knockout-label span-title">
+  ${tournament.name || "Tournament"} - ${roundName}
+</div>
         <div class="team-row home-row">
           <div class="team-side">
             <div class="fixture-team-logo-placeholder">?</div>
@@ -677,11 +690,24 @@ function renderFullBracket() {
           </span>
         </div>
 
-        ${typeof homeScore !== "number" && typeof awayScore !== "number" 
-          ? `<div class="vs-container"><span class="Kvs-text">VS</span></div>` 
-          : ""
-        }
 
+    ${!Number.isFinite(homeScore) && !Number.isFinite(awayScore) 
+  ? `<div class="vs-container">
+       <span class="Kvs-text">
+       Vs
+      
+       </span>
+     </div>` 
+  : ""
+}
+        
+${Number.isFinite(homeScore) && Number.isFinite(awayScore)
+  ? `<div class="kft-badge">
+       <span>Full Time</span>
+     </div>`
+  : ""
+}        
+      
         <div class="team-row away-row">
           <div class="team-side">
             <div class="fixture-team-logo-placeholder">?</div>
@@ -691,8 +717,24 @@ function renderFullBracket() {
             ${typeof awayScore === "number" ? awayScore : ""}
           </span>
         </div>
+   
+      
+    ${match
+  ? `
+    <div class="kmatch-time">
+      ${match.played && match.playedAt
+        ? ` ${formatRecordedTime(match.playedAt)}`
+        : match.scheduledAt
+          ? ` ${formatMatchDay(match.scheduledAt)}`
+          : ''
+      }
+    </div>
+  `
+  : ''
+}        
+        
       `;
-
+      
       if (homeLogoKey && homeName !== "Awaiting Winner") {
         getLogoFromIndexedDB(homeLogoKey).then(base64Logo => {
           const homeSide = card.querySelector(".home-row .team-side");
@@ -705,7 +747,7 @@ function renderFullBracket() {
           }
         }).catch(err => console.error("Error loading bracket home logo:", err));
       }
-
+      
       if (awayLogoKey && awayName !== "Awaiting Winner") {
         getLogoFromIndexedDB(awayLogoKey).then(base64Logo => {
           const awaySide = card.querySelector(".away-row .team-side");
@@ -718,7 +760,7 @@ function renderFullBracket() {
           }
         }).catch(err => console.error("Error loading bracket away logo:", err));
       }
-
+      
       card.addEventListener("click", () => {
         if (!match) return;
         openCupResultRecord(match);
@@ -1004,10 +1046,10 @@ function generateGroupTables(tournament) {
 
 
 
- 
- 
- 
-  
+
+
+
+
 let currentBracketMatch = null;
 
 function openCupResultRecord(match) {
@@ -1084,15 +1126,15 @@ function openGroupResult(match) {
   
   document.getElementById("knockoutResultModal")
     .classList.add("active");
-    
-    activeBracketInput =
-  document.getElementById("knockoutHomeScore");
-
-document.getElementById("knockoutHomeScore")
-  .classList.add("active");
-
-document.getElementById("knockoutAwayScore")
-  .classList.remove("active");
+  
+  activeBracketInput =
+    document.getElementById("knockoutHomeScore");
+  
+  document.getElementById("knockoutHomeScore")
+    .classList.add("active");
+  
+  document.getElementById("knockoutAwayScore")
+    .classList.remove("active");
 }
 
 
@@ -1100,7 +1142,7 @@ document.getElementById("knockoutAwayScore")
 
 
 
-  
+
 function renderCupTables() {
   
   const tournament = getCurrentTournament();
@@ -1168,12 +1210,10 @@ function renderCupTables() {
 
 
 
-
-
 function checkForEndOfGroupstage() {
   const tournament = typeof getCurrentTournament === "function" ? getCurrentTournament() : null;
   if (!tournament || !tournament.groups?.length) return;
-
+  
   let totalExpectedMatches = 0;
   tournament.groups.forEach(group => {
     let teamCount = group.teams.length;
@@ -1183,23 +1223,20 @@ function checkForEndOfGroupstage() {
     const matches = (teamCount * (teamCount - 1)) / 2;
     totalExpectedMatches += matches;
   });
-
+  
   const playedMatches = (tournament.groupMatches || []).filter(m => m.played).length;
   if (playedMatches !== totalExpectedMatches) return;
   if (tournament.groupStageComplete) return;
-
+  
   tournament.groupStageComplete = true;
   
   tournament.qualifiedTeams = getQualifiedTeams(tournament);
-
+  
   generateDirectKnockOut(tournament);
-
+  
   updateTournament(tournament);
   showActionModal("🏆 Group Stage Complete & Bracket Generated!", "success");
 }
-
-
-
 
 
 
@@ -1213,21 +1250,19 @@ function toggleCupSetUpView() {
   if (isSetupVisible) {
     
     setup.style.display = "none";
-    teams.style.display = "block";
+    teams.style.display = "flex";
     
     text.textContent = "Hide Teams";
     
     renderTeams("cupTeamsContainer");
   } else {
     
-    setup.style.display = "block";
+    setup.style.display = "flex";
     teams.style.display = "none";
     
     text.textContent = "Teams";
   }
 }
-
-
 
 
 
@@ -1265,6 +1300,8 @@ function saveBracketResults() {
   if (!match) return;
   
   
+  const wasUnplayed = !match.played;
+  
   match.homeGoals = isNaN(homeScore) ? null : homeScore;
   match.awayGoals = isNaN(awayScore) ? null : awayScore;
   
@@ -1272,7 +1309,9 @@ function saveBracketResults() {
     match.homeGoals !== null &&
     match.awayGoals !== null;
   
-  
+  if (match.played && wasUnplayed) {
+    match.playedAt = Date.now();
+  }
   if (match.played) {
     
     if (match.homeGoals > match.awayGoals) {
@@ -1287,7 +1326,7 @@ function saveBracketResults() {
   
   if (context !== "group") {
     processKnockoutUpdate(match, tournament);
-     detectChampion(tournament);
+    detectChampion(tournament);
   }
   
   
@@ -1302,6 +1341,7 @@ function saveBracketResults() {
     checkForEndOfGroupstage();
   } else {
     renderFullBracket();
+    renderKnockoutFixtures();
   }
 }
 
@@ -1379,61 +1419,69 @@ function processKnockoutUpdate(match, tournament) {
 
 
 
-
-
-
 function detectChampion(tournament) {
-  
   if (!tournament?.knockoutMatches) return null;
-  
   
   const finalRound = Math.max(
     ...tournament.knockoutMatches.map(m => m.roundIndex || 0)
   );
   
-  const finalMatch = tournament.knockoutMatches.find(m =>
-    m.roundIndex === finalRound
-  );
-  
+  const finalMatch = tournament.knockoutMatches.find(m => m.roundIndex === finalRound);
   if (!finalMatch || !finalMatch.played) return null;
   
-  const champion =
-    finalMatch.homeGoals > finalMatch.awayGoals ?
-    finalMatch.home :
-    finalMatch.awayGoals > finalMatch.homeGoals ?
-    finalMatch.away :
-    null;
+  const getTeamName = (team) => {
+    if (!team || team === "BYE") return "Awaiting Winner";
+    if (typeof team === "string") return team;
+    return team.name || "Awaiting Winner";
+  };
+  
+  let champion;
+  if (finalMatch.homeGoals > finalMatch.awayGoals) {
+    champion = finalMatch.home;
+  } else if (finalMatch.awayGoals > finalMatch.homeGoals) {
+    champion = finalMatch.away;
+  } else {
+    return null; // draw, no winner yet
+  }
   
   if (champion) {
+    const championName = getTeamName(champion);
+    const logoKey = tournament.teamLogos?.[championName];
+    
     tournament.champion = champion;
+    tournament.championName = championName;
     
-    console.log("🏆 CHAMPION DETECTED:", champion.name);
+    console.log("🏆 CHAMPION DETECTED:", championName);
     
-    showChampionAnimation(champion);
+    // Pass name + logo key so animation doesn't have to re-resolve it
+    showChampionAnimation(championName, logoKey);
   }
   
   return champion;
 }
 
 
-function showChampionAnimation(team) {
+
+
+async function showChampionAnimation(teamName, logoKey) {
+  const logoHtml = logoKey ?
+    `<img src="${await getLogoFromIndexedDB(logoKey).catch(() => "")}" class="champion-logo">` :
+    `<div class="champion-logo-placeholder">🏆</div>`;
   
   const overlay = document.createElement("div");
   overlay.className = "champion-overlay";
   
   overlay.innerHTML = `
     <div class="champion-box">
+      ${logoHtml}
       <div class="trophy">🏆</div>
-      <h1>${team.name}</h1>
+      <h1>${teamName}</h1>
       <p>CHAMPION</p>
     </div>
   `;
   
   document.body.appendChild(overlay);
-  
-  setTimeout(() => {
-    overlay.classList.add("show");
-  }, 50);
+  setTimeout(() => overlay.classList.add("show"), 50);
   
   setTimeout(() => {
     overlay.classList.remove("show");
@@ -1441,27 +1489,31 @@ function showChampionAnimation(team) {
   }, 3000);
   
   setTimeout(() => {
-  overlay.remove();
-  startChampionLoop(team);
-}, 3000);
+    overlay.remove();
+    startChampionLoop(teamName, logoKey);
+  }, 3000);
 }
 
-
-
-function startChampionLoop(team) {
+async function startChampionLoop(teamName, logoKey) {
+  const logoHtml = logoKey ?
+    `<img src="${await getLogoFromIndexedDB(logoKey).catch(() => "")}" class="loop-logo">` :
+    `<div class="loop-logo-placeholder">🏆</div>`;
   
   const loop = document.createElement("div");
   loop.className = "champion-loop";
-  
   loop.innerHTML = `
     <div class="loop-content">
-      <div class="trophy">🏆</div>
-      <h2>${team.name} - CHAMPION</h2>
+      ${logoHtml}
+      <h2>${teamName} - CHAMPION</h2>
       <div class="sparkles"></div>
     </div>
   `;
-  
   document.body.appendChild(loop);
+  
+  setTimeout(() => {
+    loop.classList.add("fade-out");
+    setTimeout(() => loop.remove(), 600);
+  }, 4000);
 }
 
 
@@ -1530,70 +1582,102 @@ if (viewport) {
 }
 
 
-async function shareBracket() {
-  const bracket = document.getElementById("bracket-container");
-  if (!bracket) return;
-
-  try {
-    const canvas = await html2canvas(bracket, {
-      backgroundColor: "#0d1117",
-      scale: 2,
-      useCORS: true,
-      scrollX: 0,
-      scrollY: 0,
-      width: bracket.scrollWidth,
-      height: bracket.scrollHeight,
-      windowWidth: bracket.scrollWidth,
-      windowHeight: bracket.scrollHeight
-    });
-
-    canvas.toBlob(async blob => {
+function shareBracket() {
+  const element = document.getElementById('bracket-container');
+  const titleText = document.getElementById('roundLabel')?.textContent || 'Bracket';
+  const fileName = titleText.replace(/\s/g, '-');
+  
+  if (!element) {
+    showAlert('Bracket container not found!');
+    return;
+  }
+  
+  const options = {
+    backgroundColor: '#0d1117',
+    useCORS: true,
+    allowTaint: true,
+    logging: false,
+    imageTimeout: 0,
+    scale: Math.min(4, window.devicePixelRatio * 2),
+    width: element.scrollWidth,
+    height: element.scrollHeight,
+    scrollX: 0,
+    scrollY: 0,
+    
+    onclone: (doc) => {
+      const cloned = doc.getElementById('bracket-container');
+      if (cloned) {
+        cloned.style.background = '#0d1117';
+        cloned.style.overflow = 'visible';
+        cloned.style.height = 'auto';
+        cloned.style.width = 'fit-content';
+        
+        const champion = cloned.querySelector('.champion-box-container');
+        if (champion) {
+          champion.style.display = 'block';
+          champion.style.marginTop = '20px';
+        }
+        
+        cloned.querySelectorAll('*').forEach(el => {
+          el.style.webkitFontSmoothing = 'antialiased';
+          el.style.textRendering = 'geometricPrecision';
+        });
+      }
+    }
+  };
+  
+  html2canvas(element, options).then(canvas => {
+    canvas.toBlob(blob => {
+      if (!blob) {
+        show('Failed to process screenshot image.');
+        return;
+      }
+      
       const file = new File(
         [blob],
-        "tournament-bracket.png",
-        { type: "image/png" }
+        `bracket-${fileName}.png`, { type: 'image/png' }
       );
-
-      if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({
+      
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({
           files: [file],
-          title: "Tournament Bracket"
-        });
+          title: titleText,
+          text: `Check out the latest ${titleText}!`
+        }).catch(err => console.log('Share dismissed', err));
       } else {
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = "tournament-bracket.png";
+        const link = document.createElement('a');
+        link.download = `bracket-${fileName}.png`;
+        link.href = canvas.toDataURL('image/png');
         link.click();
       }
-    });
-
-  } catch (err) {
+    }, 'image/png');
+  }).catch(err => {
     console.error(err);
-  }
+    showAlert('Could not take screenshot');
+  });
 }
-
 
 function generateDirectKnockOut(tournament) {
   if (!tournament) return;
-
+  
   const knockoutSize = tournament.settings?.knockoutSize;
   if (!knockoutSize) return;
-
+  
   const useGroups = tournament.settings?.enableGroups;
   
-
+  
   let teams = useGroups ? getQualifiedTeams(tournament) : (tournament.teams || []);
-
+  
   if (!teams.length) return;
-
- 
+  
+  
   const pairedTeams = getKnockoutPairings(teams, knockoutSize, useGroups);
   if (!pairedTeams.length) return;
-
-  const knockoutMatches = [];
+  
+  let knockoutMatches = [];
   const totalRounds = Math.log2(knockoutSize);
-
- 
+  
+  
   for (let i = 0; i < pairedTeams.length; i += 2) {
     knockoutMatches.push({
       id: `KO_R1_M${i / 2}`,
@@ -1607,7 +1691,7 @@ function generateDirectKnockOut(tournament) {
       winner: null
     });
   }
-
+  
   // Rounds 2+
   for (let round = 2; round <= totalRounds; round++) {
     const matchesInRound = Math.pow(2, totalRounds - round);
@@ -1618,12 +1702,15 @@ function generateDirectKnockOut(tournament) {
         slot,
         home: { id: null, name: "Awaiting Winner", isPlaceholder: true },
         away: { id: null, name: "Awaiting Winner", isPlaceholder: true },
-        homeGoals: null, awayGoals: null,
-        played: false, winner: null
+        homeGoals: null,
+        awayGoals: null,
+        played: false,
+        winner: null
       });
     }
   }
-
+  
+  knockoutMatches = assignKnockoutDates(knockoutMatches, tournament);
   tournament.knockoutMatches = knockoutMatches;
   return knockoutMatches;
 }
@@ -1634,38 +1721,38 @@ function getKnockoutPairings(teams, knockoutSize, useGroups) {
   if (!teams.length) return [];
   
   if (!useGroups) {
-  
+    
     return [...teams].sort(() => Math.random() - 0.5).slice(0, knockoutSize);
   }
   
-
+  
   return pairByGroupRules(teams, knockoutSize);
 }
 
 
 
 function pairByGroupRules(teams, knockoutSize) {
-
+  
   const seeds = teams.filter(t => t.pos === 1);
   const runners = teams.filter(t => t.pos === 2);
   
-
+  
   seeds.sort((a, b) => String(a.group).localeCompare(String(b.group)));
   runners.sort((a, b) => String(a.group).localeCompare(String(b.group)));
   
   const result = [];
   const numMatches = knockoutSize / 2;
-
-
+  
+  
   const offset = Math.ceil(numMatches / 2);
-
+  
   for (let i = 0; i < numMatches; i++) {
     const seed = seeds[i];
     
-
+    
     const runnerIndex = (i + offset) % runners.length;
     const runner = runners[runnerIndex];
-
+    
     if (seed && runner) {
       result.push(seed);
       result.push(runner);
@@ -1676,16 +1763,10 @@ function pairByGroupRules(teams, knockoutSize) {
 }
 
 
-
-
-
-
-
-
 function getQualifiedTeams(tournament) {
   if (!tournament || !tournament.groups || !tournament.settings) return [];
   
-
+  
   if (typeof generateGroupTables === "function") {
     generateGroupTables(tournament);
   }
@@ -1696,7 +1777,7 @@ function getQualifiedTeams(tournament) {
   tournament.groups.forEach(group => {
     const table = tournament.groupTables?.[group.name] || [];
     
-
+    
     const sortedTeams = [...table].sort((a, b) => (a.pos || 0) - (b.pos || 0));
     
     for (let i = 0; i < teamsQualify; i++) {
@@ -1721,8 +1802,3 @@ function getQualifiedTeams(tournament) {
   
   return qualifiedTeams;
 }
-
-
-
-
-

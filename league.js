@@ -74,7 +74,9 @@ async function renderFixtures() {
     const awayLogoKey = tournament.teamLogos?.[match.away];
     
     div.innerHTML = `
-      <div class="fixture-label">Galatico E-League</div>
+     <div class="fixture-label">
+  ${tournament.name || "Tournament"} • R${String(currentRound).padStart(2, "0")}
+</div>
       
       <div class="fixture-row-content">
         <div class="fixture-teams-stack">
@@ -94,13 +96,37 @@ async function renderFixtures() {
             ? `
               <div class="score-stack">
                 <span class="score-badge played">${match.homeGoals}</span>
+                <span class="ft-badge">Full Time</span>
                 <span class="score-badge played">${match.awayGoals}</span>
               </div>
             `
-            : `<span class="vs-text-alt">VS</span>`
+          : `<span class="vs-text-alt">
+${formatMatchDay(match.scheduledAt)}
+   </span>`
           }
         </div>
+        
       </div>
+      
+  ${
+
+    match.played
+
+      ? `
+
+        <div class="match-playedTime">
+
+          ${formatRecordedTime(match.playedAt)}
+
+        </div>
+
+      `
+
+      : ""
+
+  }
+
+
     `;
     
     if (homeLogoKey) {
@@ -142,6 +168,35 @@ async function renderFixtures() {
   });
 }
 
+
+function formatMatchDay(value) {
+  if (!value) return "Vs";
+  
+  const date = new Date(value);
+  if (isNaN(date.getTime())) return "";
+  
+  const weekday = date.toLocaleDateString("en-GB", { weekday: "short" }); // Mon
+  const day = date.getDate(); // 13
+  
+  const monthYear = date.toLocaleDateString("en-GB", {
+    month: "long",
+    year: "numeric"
+  }).replace(" ", ", ");
+  return `${weekday} ${day}<br>${monthYear}`;
+}
+
+function formatRecordedTime(value) {
+  if (!value) return "";
+  
+  const date = new Date(value);
+  if (isNaN(date.getTime())) return "";
+  
+  const day = date.getDate();
+  const month = date.toLocaleDateString("en-GB", { month: "short" });
+  const year = date.getFullYear();
+  
+  return `${day} ${month}, ${year}`;
+}
 
 function nextRound() {
   console.log("[nextRound] Called");
@@ -224,77 +279,27 @@ function setCurrentRound(round) {
 
 
 
-async function tournamentCreator() {
-  const input = document.getElementById("tournamentNameInput");
-  const formatInput = document.getElementById("tournamentFormatInput");
-  const name = input.value.trim();
-  
-  if (!name) {
-    showAlert("Enter tournament name");
-    return;
-  }
-  
-  const id = Date.now().toString();
-  
-  const newTournament = {
-    id,
-    name,
-    format: formatInput.value,
-    createdAt: Date.now(),
-    teams: [],
-    matches: [],
-    table: [],
-    groups: [],
-    teamLogos: {},
-    groupMatches: [],
-    qualifiedTeams: [],
-    knockoutMatches: [],
-    settings: {
-      knockoutSize: 0,
-      teamsPerGroup: 0,
-      qualifiersPerGroup: 0
-    }
-  };
-  
-  await saveTournament(newTournament);
-  
-  hideCreateTournament();
-  showAlert("Tournament created!");
-  
-  input.value = "";
-  
-  if (typeof renderTournamentList === "function") {
-    renderTournamentList();
-  }
-}
-
-
-
-
-
-
-
 function deleteTeam(index) {
   const tournament = getCurrentTournament();
   if (!tournament) return;
-
+  
   const teamName = tournament.teams[index];
   if (!teamName) return;
-
+  
   
   showConfirmModal(
     `Delete ${teamName}?`,
     (isConfirmed) => {
-    
+      
       if (isConfirmed) {
         tournament.teams.splice(index, 1);
         tournament.table = tournament.table.filter(t => t.name !== teamName);
         tournament.matches = tournament.matches.filter(
           m => m.home !== teamName && m.away !== teamName
         );
-
+        
         updateTournament(tournament);
-
+        
         renderTeams();
         renderTable(getSortedTable(tournament.table));
         showActionModal("❌ Team Deleted", "delete");
@@ -302,13 +307,6 @@ function deleteTeam(index) {
     }
   );
 }
-
-
-
-
-
-
-
 
 
 function toggleScreenshotMode() {
@@ -324,25 +322,45 @@ function shareFixtures() {
   
   const titleText = roundLabelEl ? roundLabelEl.textContent : 'Fixtures';
   const roundText = titleText.replace(/\s/g, '-');
-
+  
   if (!element) {
     showAlert('Screenshot target area not found!');
     return;
   }
-
-  html2canvas(element, {
+  
+  const options = {
     backgroundColor: '#0d1117',
-    scale: 2,
-    useCORS: true
-  }).then(canvas => {
+    useCORS: true,
+    allowTaint: true,
+    logging: false,
+    imageTimeout: 0,
+    
+    scale: Math.min(4, window.devicePixelRatio * 2),
+    
+    onclone: (doc) => {
+      const cloned = doc.getElementById('fixtureScreenshotArea');
+      if (cloned) {
+        cloned.style.background = '#0d1117';
+        cloned.style.webkitFontSmoothing = 'antialiased';
+        cloned.style.textRendering = 'geometricPrecision';
+      }
+    }
+  };
+  
+  html2canvas(element, options).then(canvas => {
+    
     canvas.toBlob(blob => {
       if (!blob) {
         show('Failed to process screenshot image.');
         return;
       }
-
-      const file = new File([blob], `fixtures-${roundText}.png`, { type: 'image/png' });
-
+      
+      const file = new File(
+        [blob],
+        `fixtures-${roundText}.png`,
+        { type: 'image/png' }
+      );
+      
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         navigator.share({
           files: [file],
@@ -356,6 +374,7 @@ function shareFixtures() {
         link.click();
       }
     }, 'image/png');
+    
   }).catch(err => {
     console.error('Screenshot failed:', err);
     showAlert('Could not take screenshot');
@@ -364,19 +383,16 @@ function shareFixtures() {
 
 
 
-
-window.onload = function () {
+window.onload = function() {
   renderTournamentList();
-
+  
   const tournament = getCurrentTournament();
-
+  
   if (tournament?.table) {
     renderTable(getSortedTable(tournament.table));
     
   }
 };
-
-
 
 
 
@@ -416,21 +432,17 @@ function goToTeamListPage() {
 
 
 
-
-
-
-
 function goToTournamentPage() {
   document.getElementById("listOfTournamentPage").style.display = "none";
   document.getElementById("nav").style.display = "flex";
   document.getElementById("tourListPageHead").style.display = "none";
-
+  
   hideAllPages();
-
+  
   const page = document.getElementById("tournamentPage");
   if (page) page.style.display = "block";
- 
-
+  
+  
   goToTablePage();
 }
 
@@ -458,107 +470,21 @@ function goToTablePage() {
   document.getElementById("resultRecord").style.display = "none";
   document.getElementById("nav").style.display = "flex";
   showingForm = false;
-
-document.getElementById("tableView").style.display = "block";
-document.getElementById("formView").style.display = "none";
-
-document.getElementById("formToggleBtn").innerHTML = `
+  
+  document.getElementById("tableView").style.display = "block";
+  document.getElementById("formView").style.display = "none";
+  
+  document.getElementById("formToggleBtn").innerHTML = `
   <span class="btn-icon">📈</span>
   <span class="btn-text">Form</span>
 `;
-
+  
   rebuildTableFromMatches();
-
+  
   const tournament = getCurrentTournament();
   if (tournament) {
     renderTable(getSortedTable(tournament.table || []));
   }
-}
-
-
-
-
-
-
-
-
-async function renderTournamentList() {
-  const container = document.getElementById("tournamentList");
-  if (!container) return;
-  
-  container.innerHTML = `<p class="emptyText">Loading tournaments...</p>`;
-  
-  const tournaments = await getTournaments();
-  
-  container.innerHTML = "";
-  
-  if (!tournaments || tournaments.length === 0) {
-    container.innerHTML = `
-      <p class="emptyText">
-        No tournaments created yet <br>
-        Your tournament will appear here when you create one
-      </p>
-    `;
-    return;
-  }
-  
-  tournaments.forEach(tournament => {
-    const div = document.createElement("div");
-    div.className = "tournament-card";
-    
-    const isSelected =
-      typeof selectedTournaments !== "undefined" &&
-      selectedTournaments.includes(tournament.id);
-    
-    div.innerHTML = `
-      ${(typeof exportMode !== "undefined" && exportMode) ? `
-        <div class="check">
-          ${isSelected ? "✔" : ""}
-        </div>
-      ` : ""}
-      <div class="tournament-format">${tournament.format || "League"}</div>
-      <h3>${tournament.name}</h3>
-    `;
-    
-    let pressTimer = null;
-    let wasLongPress = false;
-    
-    const startPress = () => {
-      wasLongPress = false;
-      
-      pressTimer = setTimeout(() => {
-        wasLongPress = true;
-        
-        if (typeof deleteTournament === "function") {
-          deleteTournament(tournament.id);
-        }
-        
-        if (navigator.vibrate) navigator.vibrate(50);
-      }, 600);
-    };
-    
-    const cancelPress = () => clearTimeout(pressTimer);
-    
-    div.addEventListener("click", () => {
-      if (wasLongPress) return;
-      
-      if (typeof exportMode !== "undefined" && exportMode) {
-        if (typeof toggleSelect === "function") toggleSelect(tournament.id);
-      } else {
-        if (typeof openTournament === "function") openTournament(tournament.id);
-      }
-    });
-    
-    div.addEventListener("touchstart", startPress);
-    div.addEventListener("touchend", cancelPress);
-    div.addEventListener("touchmove", cancelPress);
-    
-    div.addEventListener("mousedown", startPress);
-    div.addEventListener("mouseup", cancelPress);
-    div.addEventListener("mouseleave", cancelPress);
-    
-    container.appendChild(div);
-  });
 }
 
 
@@ -601,8 +527,6 @@ function renderTable(data = []) {
     tbody.appendChild(tr);
   });
 }
-
-
 
 
 function rebuildTableFromMatches() {
@@ -677,8 +601,6 @@ function rebuildTableFromMatches() {
 
 
 
-
-
 function handleSetScore() {
   const home = document.getElementById("homeTeam").textContent.trim();
   const away = document.getElementById("awayTeam").textContent.trim();
@@ -697,45 +619,18 @@ function handleSetScore() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 function deleteFixtures(force = false) {
   const tournament = getCurrentTournament();
   if (!tournament) return;
-
-
+  
+  
   if (!force && !confirm("Delete all fixtures and match results for this tournament?")) {
     return;
   }
-
+  
   tournament.matches = [];
-  tournament.table = []; 
-
+  tournament.table = [];
+  
   updateTournament(tournament);
   
   renderFixtures();
@@ -750,32 +645,32 @@ function deleteFixtures(force = false) {
 function generateFixtures(rounds) {
   const tournament = getCurrentTournament();
   if (!tournament) return;
-
+  
   const teams = tournament.teams;
   if (teams.length < 2) {
     showAlert("Add at least 2 teams first");
     return;
   }
-
+  
   let matches = [];
   let teamList = [...teams];
-
+  
   const hasBye = teamList.length % 2 !== 0;
-  if (hasBye) teamList.push("BYE");
-
+  if (hasBye) teamList.push("__BYE__");
+  
   const numTeams = teamList.length;
   const numRounds = numTeams - 1;
   const halfSize = numTeams / 2;
-
+  
   for (let round = 0; round < numRounds; round++) {
     for (let i = 0; i < halfSize; i++) {
       const home = teamList[i];
       const away = teamList[numTeams - 1 - i];
-
-      if (home !== "BYE" && away !== "BYE") {
+      
+      if (home !== "__BYE__" && away !== "__BYE__") {
         matches.push({
-          home: home,
-          away: away,
+          home,
+          away,
           homeGoals: null,
           awayGoals: null,
           played: false,
@@ -783,9 +678,13 @@ function generateFixtures(rounds) {
         });
       }
     }
-    teamList.splice(1, 0, teamList.pop());
+    
+    const fixed = teamList[0];
+    const rest = teamList.slice(1);
+    rest.unshift(rest.pop());
+    teamList = [fixed, ...rest];
   }
-
+  
   if (rounds === 2) {
     const returnLegs = matches.map(m => ({
       ...m,
@@ -795,7 +694,8 @@ function generateFixtures(rounds) {
     }));
     matches = [...matches, ...returnLegs];
   }
-
+  
+  matches = assignRoundDatesSmart(matches, tournament);
   tournament.matches = matches;
   
   tournament.records = {
@@ -808,76 +708,25 @@ function generateFixtures(rounds) {
     longestWinningRuns: [],
     longestUnbeatenRuns: []
   };
-
+  
   tournament.table = teams.map(name => ({
-    name, played: 0, wins: 0, draws: 0, losses: 0, gf: 0, ga: 0, gd: 0, points: 0
+    name,
+    played: 0,
+    wins: 0,
+    draws: 0,
+    losses: 0,
+    gf: 0,
+    ga: 0,
+    gd: 0,
+    points: 0
   }));
-
+  
   setCurrentRound(1);
   updateTournament(tournament);
   renderRecords();
 }
 
 
-
-function generateFixtures(rounds) {
-  const tournament = getCurrentTournament();
-  if (!tournament) return;
-
-  const teams = tournament.teams;
-  if (teams.length < 2) {
-   showAlert("Add at least 2 teams first");
-    return;
-  }
-
-  let matches = [];
-  let teamList = [...teams];
-
-  const hasBye = teamList.length % 2 !== 0;
-  if (hasBye) teamList.push("BYE");
-
-  const numTeams = teamList.length;
-  const numRounds = numTeams - 1;
-  const halfSize = numTeams / 2;
-
-  for (let round = 0; round < numRounds; round++) {
-    for (let i = 0; i < halfSize; i++) {
-      const home = teamList[i];
-      const away = teamList[numTeams - 1 - i];
-
-      if (home !== "BYE" && away !== "BYE") {
-        matches.push({
-          home: home,
-          away: away,
-          homeGoals: null,
-          awayGoals: null,
-          played: false,
-          round: round + 1
-        });
-      }
-    }
-    teamList.splice(1, 0, teamList.pop());
-  }
-
-  if (rounds === 2) {
-    const returnLegs = matches.map(m => ({
-      ...m,
-      home: m.away,
-      away: m.home,
-      round: m.round + numRounds
-    }));
-    matches = [...matches, ...returnLegs];
-  }
-
-  tournament.matches = matches;
-  tournament.table = teams.map(name => ({
-    name, played: 0, wins: 0, draws: 0, losses: 0, gf: 0, ga: 0, gd: 0, points: 0
-  }));
-
-  setCurrentRound(1);
-  updateTournament(tournament);
-  showAlert("Fixture Created")
-}
 
 
 
@@ -891,14 +740,6 @@ function resetLogoUI() {
   logoPreview.removeAttribute("src");
   logoPreview.classList.remove("show");
 }
-
-
-
-
-
-
-
-
 
 
 function getTeamForm(teamName, limit = 5) {
@@ -1018,10 +859,10 @@ function renderFormView() {
 function getSortedTable(table) {
   return [...table].sort((a, b) => {
     if (b.pts !== a.pts) return b.pts - a.pts;
-
+    
     const gdA = a.gf - a.ga;
     const gdB = b.gf - b.ga;
-
+    
     return gdB - gdA;
   });
 }
@@ -1182,9 +1023,6 @@ function getLongestWinningRuns(matches) {
     .sort((a, b) => b[1] - a[1]);
 }
 
-
-
-
 function renderRecords() {
   const tournament = getCurrentTournament();
   if (!tournament || !tournament.matches) return;
@@ -1246,7 +1084,7 @@ function renderRecords() {
 function renderTop5(containerId, dataArray, title, suffix = "") {
   const el = document.getElementById(containerId);
   if (!el || !dataArray) return;
-
+  
   const tournament = getCurrentTournament();
   const top5 = dataArray.slice(0, 5);
   
@@ -1278,7 +1116,7 @@ function renderTop5(containerId, dataArray, title, suffix = "") {
       </div>
     `;
   });
-
+  
   el.innerHTML = `
     <div class="record-card top5-card">
       <div class="record-title" style="margin-bottom: 10px; font-weight: bold;">${title}</div>
@@ -1287,13 +1125,13 @@ function renderTop5(containerId, dataArray, title, suffix = "") {
       </div>
     </div>
   `;
-
+  
   top5.forEach((item, index) => {
     let teamName = Array.isArray(item) ? item[0] : (item?.team || item?.name);
     if (!teamName) return;
-
+    
     const logoKey = tournament.teamLogos?.[teamName];
-
+    
     if (logoKey) {
       getLogoFromIndexedDB(logoKey).then(base64Logo => {
         const rowNode = el.querySelector(`.item-index-${index} .team-side`);
@@ -1356,7 +1194,7 @@ function renderMatchCard(containerId, match, title, extraLabel = "") {
       </div>
     </div>
   `;
-
+  
   if (homeLogoKey) {
     getLogoFromIndexedDB(homeLogoKey).then(base64Logo => {
       const homeRow = el.querySelector(".card-home-container .team-side");
@@ -1369,7 +1207,7 @@ function renderMatchCard(containerId, match, title, extraLabel = "") {
       }
     }).catch(err => console.error("Error loading match card home logo:", err));
   }
-
+  
   if (awayLogoKey) {
     getLogoFromIndexedDB(awayLogoKey).then(base64Logo => {
       const awayRow = el.querySelector(".card-away-container .team-side");
@@ -1413,7 +1251,7 @@ function renderStreakCard(containerId, dataArray, title, suffix = "") {
       </div>
     `;
   });
-
+  
   el.innerHTML = `
     <div class="record-card hero streak-card">
       <div class="record-title" style="margin-bottom: 12px; font-weight: bold;">${title}</div>
@@ -1422,12 +1260,12 @@ function renderStreakCard(containerId, dataArray, title, suffix = "") {
       </div>
     </div>
   `;
-
+  
   top3.forEach((data, index) => {
     if (!data || data.length < 2) return;
     const [team] = data;
     const logoKey = tournament.teamLogos?.[team];
-
+    
     if (logoKey) {
       getLogoFromIndexedDB(logoKey).then(base64Logo => {
         const rowNode = el.querySelector(`.streak-row-item-${index} .team-side`);
@@ -1445,14 +1283,6 @@ function renderStreakCard(containerId, dataArray, title, suffix = "") {
     }
   });
 }
-
-
-
-
-
-
-
-
 
 
 
@@ -1551,7 +1381,7 @@ function getLeagueWinnerFinal() {
     
     if (thirdMax < top2MinPoints) {
       return {
-        team: leader.name, 
+        team: leader.name,
         pts: leader.pts,
         gd: leader.gf - leader.ga,
         finished: false,
@@ -1647,4 +1477,190 @@ function renderChampionPodium() {
   }
 }
 
+async function renderTournamentList() {
+  const container = document.getElementById("tournamentList");
+  if (!container) return;
+  
+  container.innerHTML = `<p class="emptyText">Loading tournaments...</p>`;
+  
+  const tournaments = await getTournaments();
+  
+  container.innerHTML = "";
+  
+  if (!tournaments || tournaments.length === 0) {
+    container.innerHTML = `
+      <p class="emptyText">
+        No tournaments created yet <br>
+        Your tournament will appear here when you create one
+      </p>
+    `;
+    return;
+  }
+  
+  tournaments.forEach(tournament => {
+    const div = document.createElement("div");
+    div.className = "tournament-card";
+    div.setAttribute("data-id", tournament.id);
+    
+    const isSelected =
+      typeof selectedTournaments !== "undefined" &&
+      selectedTournaments.includes(tournament.id);
+    
+    div.innerHTML = `
+      ${(typeof exportMode !== "undefined" && exportMode) ? `
+        <div class="check">
+          ${isSelected ? "✔" : ""}
+        </div>
+      ` : ""}
 
+      <div class="card-header">
+        <div class="tournament-format">${tournament.format || "League"}</div>
+        <div class="tournament-menu-btn">☰</div>
+      </div>
+
+      <h3>${tournament.name}</h3>
+
+      <div class="menu-dropdown hidden" id="menu-${tournament.id}">
+        <div class="menu-itemList edit">Edit</div>
+        <div class="menu-itemList delete">Delete</div>
+      </div>
+    `;
+    
+    const menuBtn = div.querySelector(".tournament-menu-btn");
+    const dropdown = div.querySelector(`#menu-${tournament.id}`);
+    const editBtn = div.querySelector(".menu-itemList.edit");
+    const deleteBtn = div.querySelector(".menu-itemList.delete");
+    
+    menuBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      
+      document.querySelectorAll(".menu-dropdown").forEach(el => {
+        if (el !== dropdown) el.classList.add("hidden");
+      });
+      
+      dropdown.classList.toggle("hidden");
+    });
+    
+    editBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      
+      if (typeof editTournament === "function") {
+        editTournament(tournament.id);
+      }
+      
+      dropdown.classList.add("hidden");
+    });
+    
+    deleteBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      
+      if (typeof deleteTournament === "function") {
+        deleteTournament(tournament.id);
+      }
+      
+      dropdown.classList.add("hidden");
+    });
+    
+    div.addEventListener("click", (e) => {
+      if (e.target.closest(".edit-actions") || e.target.closest(".edit-input")) {
+        return;
+      }
+      
+      if (typeof exportMode !== "undefined" && exportMode) {
+        if (typeof toggleSelect === "function") toggleSelect(tournament.id);
+      } else {
+        if (typeof openTournament === "function") openTournament(tournament.id);
+      }
+    });
+    
+    container.appendChild(div);
+  });
+  
+  document.addEventListener("click", () => {
+    document.querySelectorAll(".menu-dropdown").forEach(el => {
+      el.classList.add("hidden");
+    });
+  });
+}
+
+function editTournament(tournamentId) {
+  const card = document.querySelector(
+    `.tournament-card[data-id="${tournamentId}"]`
+  );
+  
+  if (!card) return;
+  
+  const titleEl = card.querySelector("h3");
+  const currentName = titleEl.textContent;
+  
+  titleEl.innerHTML = `
+    <input type="text" class="edit-input" value="${currentName}" />
+  `;
+  
+  let actionBox = card.querySelector(".edit-actions");
+  
+  if (!actionBox) {
+    actionBox = document.createElement("div");
+    actionBox.className = "edit-actions";
+    card.appendChild(actionBox);
+  }
+  
+  actionBox.innerHTML = `
+    <div class="menu-itemList save">Save</div>
+    <div class="menu-itemList cancel">Cancel</div>
+  `;
+  
+  const input = titleEl.querySelector("input");
+  
+  window.editingTournamentId = tournamentId;
+  
+  input.focus();
+  input.select();
+  
+  const saveBtn = actionBox.querySelector(".save");
+  const cancelBtn = actionBox.querySelector(".cancel");
+  
+  saveBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    saveInlineEdit(e);
+  });
+  
+  cancelBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    window.editingTournamentId = null;
+    renderTournamentList();
+  });
+}
+
+
+async function saveInlineEdit(e) {
+  e.stopPropagation();
+  
+  const card = document.querySelector(
+    `.tournament-card[data-id="${window.editingTournamentId}"]`
+  );
+  
+  if (!card) return;
+  
+  const input = card.querySelector("input");
+  if (!input) return;
+  
+  const newName = input.value.trim();
+  if (!newName) return;
+  
+  const tournaments = getTournaments();
+  
+  const index = tournaments.findIndex(
+    t => t.id === window.editingTournamentId
+  );
+  
+  if (index !== -1) {
+    tournaments[index].name = newName;
+    
+    
+    updateTournament(tournaments[index]);
+  }
+  
+  window.editingTournamentId = null;
+  renderTournamentList();
+}
