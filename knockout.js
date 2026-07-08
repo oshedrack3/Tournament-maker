@@ -1266,6 +1266,7 @@ function toggleCupSetUpView() {
 
 
 
+
 function saveBracketResults() {
   
   if (!currentBracketMatch) return;

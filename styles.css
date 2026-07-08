@@ -418,11 +418,62 @@ select:focus {
 }
 
 
+.rank-cell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 2px;
+  white-space: nowrap;
+}
+
+.rank-num {
+  font-weight: bold;
+  min-width: 12px;
+  text-align: right;
+  margin-right: 2px;
+}
+
+.table-team-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.table-team-logo,
+.team-logo-placeholder {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  min-height: 18px;
+  object-fit: contain;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.team-logo-placeholder {
+  background-color: #e0e0e0;
+  border-radius: 50%;
+  font-size: 0.65rem;
+  color: #666666;
+  font-weight: bold;
+}
+
+.team-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .table-wrapper.screenshot-mode {
   overflow-x: hidden;
 }
 
 .table-wrapper.screenshot-mode table {
+  width: 100%;
   min-width: 0;
   table-layout: fixed;
   font-size: 0.7rem;
@@ -430,22 +481,30 @@ select:focus {
 
 .table-wrapper.screenshot-mode th,
 .table-wrapper.screenshot-mode td {
-  padding: 6px 4px;
+  padding: 6px 2px;
 }
 
+.table-wrapper.screenshot-mode th:first-child,
+.table-wrapper.screenshot-mode td:first-child {
+  width: 8%;
+  position: static;
+}
 
+.table-wrapper.screenshot-mode th:nth-child(2),
 .table-wrapper.screenshot-mode td:nth-child(2) {
+  width: 32%;
+  position: static;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.table-wrapper.screenshot-mode th:first-child,
-.table-wrapper.screenshot-mode td:first-child,
-.table-wrapper.screenshot-mode th:nth-child(2),
-.table-wrapper.screenshot-mode td:nth-child(2) {
-  position: static;
+.table-wrapper.screenshot-mode th:nth-child(n+3),
+.table-wrapper.screenshot-mode td:nth-child(n+3) {
+  width: 7.5%;
+  text-align: center;
 }
+
 
 .table-wrapper {
   width: 100%;
@@ -1292,7 +1351,7 @@ tr:hover td:nth-child(2) {
 }
 
 @keyframes float {
-
+  
   0%,
   100% {
     transform: translateY(0);
@@ -1307,7 +1366,8 @@ tr:hover td:nth-child(2) {
   padding: 5px;
   border-radius: 9px;
 }
-.knockout-label{
+
+.knockout-label {
   font-size: 12px;
   text-align: center;
   opacity: 0.4;
@@ -2667,8 +2727,8 @@ select {
   width: 20px;
   position: absolute;
   right: 50%;
-  transform: translateY(-50%); 
- 
+  transform: translateY(-50%);
+  
   pointer-events: none;
   z-index: 10;
   text-align: center;
@@ -2681,7 +2741,7 @@ select {
   color: #4a5568;
   background-color: #edf2f7;
   width: 45px;
-  padding: 5px 6px;  
+  padding: 5px 6px;
   border-radius: 6px;
   letter-spacing: 0.5px;
   box-shadow: 0 0 0 4px #ffffff;
@@ -2700,16 +2760,16 @@ select {
 
 
 .kmatch-time {
-white-space: nowrap;
-display: inline-block;
-width: 100%;
-text-align: center;
-color: #4a5568;
-opacity: 0.7;
+  white-space: nowrap;
+  display: inline-block;
+  width: 100%;
+  text-align: center;
+  color: #4a5568;
+  opacity: 0.7;
   
 }
 
-  .pending-match {
+.pending-match {
   border: 1px dashed #a0aec0;
   background-color: #f7fafc;
   cursor: default;
@@ -3033,9 +3093,9 @@ opacity: 0.7;
 .ft-badge {
   color: #111827;
   font-weight: 00;
-  display: flex; 
-  align-items: center; 
-  justify-content: center;  
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 10px;
 }
 
@@ -3377,7 +3437,7 @@ opacity: 0.7;
 }
 
 .tournament-menu-btn {
- 
+  
   font-size: 18px;
   cursor: pointer;
   padding: 5px;
@@ -3403,7 +3463,7 @@ opacity: 0.7;
 .menu-itemList {
   padding: 10px 15px;
   cursor: pointer;
-  color: #000 ;
+  color: #000;
 }
 
 .menu-itemList:hover {
@@ -3471,9 +3531,17 @@ opacity: 0.7;
 }
 
 @keyframes flashPop {
- 0% { background: rgba(255, 255, 255, 0.95); }
- 50% { background: rgba(255, 215, 0, 0.3); }
- 100% { background: rgba(255, 255, 255, 0.95); }
+  0% {
+    background: rgba(255, 255, 255, 0.95);
+  }
+  
+  50% {
+    background: rgba(255, 215, 0, 0.3);
+  }
+  
+  100% {
+    background: rgba(255, 255, 255, 0.95);
+  }
 }
 
 .champion-box {
@@ -3489,9 +3557,17 @@ opacity: 0.7;
 }
 
 @keyframes liftTrophy {
- 0% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(-30px) scale(1.1); }
- 100% { transform: translateY(0) scale(1); }
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  
+  50% {
+    transform: translateY(-30px) scale(1.1);
+  }
+  
+  100% {
+    transform: translateY(0) scale(1);
+  }
 }
 
 .champion-logo {
@@ -3499,7 +3575,7 @@ opacity: 0.7;
   height: 80px;
   object-fit: contain;
   margin: 0 auto 15px;
-  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.15));
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15));
   animation: pop 0.6s ease;
 }
 
@@ -3510,9 +3586,20 @@ opacity: 0.7;
 }
 
 @keyframes pop {
-  0% { transform: scale(0.3) rotate(-15deg); opacity: 0; }
- 60% { transform: scale(1.2) rotate(5deg); opacity: 1; }
- 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  0% {
+    transform: scale(0.3) rotate(-15deg);
+    opacity: 0;
+  }
+  
+  60% {
+    transform: scale(1.2) rotate(5deg);
+    opacity: 1;
+  }
+  
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
 }
 
 .champion-box h1 {
@@ -3526,8 +3613,13 @@ opacity: 0.7;
 }
 
 @keyframes colorShift {
- 0% { filter: hue-rotate(0deg); }
- 100% { filter: hue-rotate(360deg); }
+  0% {
+    filter: hue-rotate(0deg);
+  }
+  
+  100% {
+    filter: hue-rotate(360deg);
+  }
 }
 
 .champion-loop {
@@ -3551,7 +3643,7 @@ opacity: 0.7;
   height: 90px;
   object-fit: contain;
   margin: 0 auto 15px;
-  filter: drop-shadow(0 6px 16px rgba(0,0,0,0.2));
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.2));
 }
 
 .loop-content .trophy {
@@ -3561,15 +3653,34 @@ opacity: 0.7;
 }
 
 @keyframes floatLoop {
-  0% { transform: translateY(0) scale(1); }
- 50% { transform: translateY(-20px) scale(1.05); }
- 100% { transform: translateY(0) scale(1); }
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  
+  50% {
+    transform: translateY(-20px) scale(1.05);
+  }
+  
+  100% {
+    transform: translateY(0) scale(1);
+  }
 }
 
 @keyframes spinGlow {
- 0% { transform: rotate(0deg) scale(1); filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.6)); }
- 50% { transform: rotate(180deg) scale(1.2); filter: drop-shadow(0 0 40px rgba(255, 107, 107, 0.8)); }
- 100% { transform: rotate(360deg) scale(1); filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.6)); }
+  0% {
+    transform: rotate(0deg) scale(1);
+    filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.6));
+  }
+  
+  50% {
+    transform: rotate(180deg) scale(1.2);
+    filter: drop-shadow(0 0 40px rgba(255, 107, 107, 0.8));
+  }
+  
+  100% {
+    transform: rotate(360deg) scale(1);
+    filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.6));
+  }
 }
 
 .loop-content h2 {
@@ -3590,9 +3701,20 @@ opacity: 0.7;
 }
 
 @keyframes sparkleMove {
- 0% { opacity: 0.4; transform: translateY(0) scale(1); }
- 50% { opacity: 1; transform: translateY(-15px) scale(1.2); }
- 100% { opacity: 0.4; transform: translateY(0) scale(1); }
+  0% {
+    opacity: 0.4;
+    transform: translateY(0) scale(1);
+  }
+  
+  50% {
+    opacity: 1;
+    transform: translateY(-15px) scale(1.2);
+  }
+  
+  100% {
+    opacity: 0.4;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .champion-loop.fade-out {
@@ -3601,7 +3723,7 @@ opacity: 0.7;
 }
 
 
-.matchdaySelectsection{
+.matchdaySelectsection {
   display: flex;
   flex-direction: column;
   justify-items: center;
@@ -3618,7 +3740,206 @@ opacity: 0.7;
 
 .start-endDate {
   display: flex;
- flex-direction: column;
+  flex-direction: column;
   padding: 10px;
- gap: 5px;
+  gap: 5px;
+}
+
+
+#potsView {
+  padding: 67px 30px 20px 0;
+  overflow-x: auto;
+}
+
+
+.page-toggle {
+  display: flex;
+  position: fixed;
+  top: 2px;
+  right: 50px;
+  left: 0;
+  gap: 4px;
+  flex-shrink: 0;
+  padding-left: 20px;
+  padding-right: 20px;
+  padding-top: 15px;
+  border-radius: 0;
+  margin-bottom: 10px;
+  overflow-x: auto;
+  box-sizing: border-box;
+  min-width: 0;
+  z-index: 80;
+  
+  padding-bottom: 3px;
+}
+
+
+.page-toggle button {
+  flex: 1;
+  
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  
+  min-width: 0;
+  min-height: 38px;
+  padding: 4px 6px;
+  
+  background: #0d1117;
+  color: #e6edf3;
+  
+  border: 1px solid #30363d;
+  border-radius: 10px;
+  
+  cursor: pointer;
+  white-space: nowrap;
+  
+  transition: background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.1s ease;
+  gap: 5px;
+}
+
+.page-toggle button:hover {
+  background: #161b22;
+  border-color: #58a6ff;
+}
+
+.page-toggle button.active {
+  background: #238636;
+  color: white;
+  border-color: #2ea043;
+}
+
+.page-toggle button:active {
+  transform: scale(0.97);
+}
+
+
+
+.pos-table-container.screenshot-mode {
+  padding: 16px;
+  background: #161b22;
+}
+
+.pos-table-container.screenshot-mode table {
+  border-collapse: collapse;
+}
+
+.pos-mapping {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  width: 90%;
+  padding: 10px;
+  border: solid 1px #161b22;
+  border-radius: 15px;
+  z-index: 100;
+  
+}
+
+.pos-mapping label {
+  display: block;
+  color: #161b22;
+  margin-bottom: 5px;
+}
+
+.POTS-header {
+  text-align: center;
+  color: #161b22;
+  margin-bottom: 10px;
+}
+
+.POTS-header p {
+  opacity: 0.6;
+}
+
+
+.pos-mapping button {
+  display: flex;
+  justify-content: center;
+  color: #161b22;
+  border: solid 1px green;
+  border-radius: 8px;
+  justify-self: center;
+  width: 100%;
+  padding: 10px;
+  font-size: 15px;
+}
+
+#rulesModal button {
+  display: flex;
+  justify-content: center;
+  color: red;
+  border: solid 1px red;
+  border-radius: 10px;
+  width: 100%;
+  padding: 10px;
+  margin-top: 15px;
+  font-size: 15px;
+}
+
+.rules-modal-content {
+  background: #111;
+  color: #fff;
+  padding: 20px;
+  max-width: 400px;
+  border-radius: 10px;
+  overflow-y: auto;
+  max-height: 80vh;
+  line-height: 1.6;
+}
+
+.rules-section h3 {
+  margin-top: 15px;
+  color: #ffd700;
+}
+
+.rules-section ul {
+  padding-left: 18px;
+}
+
+.btn-rules {
+  margin-bottom: 10px;
+  color: blue;
+  text-decoration: underline;
+  font-style: italic;
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+
+#rulesModal h2 {
+  position: sticky;
+}
+
+
+
+.pos.up {
+  color: green;
+}
+
+.pos.down {
+  color: red;
+}
+
+.pos.same {
+  color: gray;
+}
+
+
+.pos-change.up {
+  color: #28a745;
+}
+
+.pos-change.down {
+  color: #dc3545;
+}
+
+.pos-change.same {
+  color: #888888;
 }

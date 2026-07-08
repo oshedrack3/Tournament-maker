@@ -301,6 +301,7 @@ function deleteTeam(index) {
         updateTournament(tournament);
         
         renderTeams();
+        renderTeams("cupTeamsContainer");
         renderTable(getSortedTable(tournament.table));
         showActionModal("❌ Team Deleted", "delete");
       }
@@ -357,8 +358,7 @@ function shareFixtures() {
       
       const file = new File(
         [blob],
-        `fixtures-${roundText}.png`,
-        { type: 'image/png' }
+        `fixtures-${roundText}.png`, { type: 'image/png' }
       );
       
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -484,118 +484,6 @@ function goToTablePage() {
   const tournament = getCurrentTournament();
   if (tournament) {
     renderTable(getSortedTable(tournament.table || []));
-  }
-}
-
-
-
-function renderTable(data = []) {
-  const tbody = document.getElementById("tableBody");
-  if (!tbody) return;
-  
-  tbody.innerHTML = "";
-  
-  if (!Array.isArray(data) || data.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;">No table data</td></tr>`;
-    return;
-  }
-  
-  data.forEach((team, index) => {
-    const tr = document.createElement("tr");
-    tr.setAttribute("data-row-index", index);
-    
-    const gd = team.gd ?? ((team.gf || 0) - (team.ga || 0));
-    const gdClass = gd < 0 ? 'neg' : '';
-    
-    tr.innerHTML = `
-      <td>${index + 1}</td>
-      <td>
-        <div class="table-team-cell">
-          <strong>${team.name || ''}</strong>
-        </div>
-      </td>
-      <td>${team.played || 0}</td>
-      <td>${team.wins || 0}</td>
-      <td>${team.draws || 0}</td>
-      <td>${team.losses || 0}</td>
-      <td>${team.gf || 0}</td>
-      <td>${team.ga || 0}</td>
-      <td class="${gdClass}">${gd >= 0 ? '+' + gd : gd}</td>
-      <td><strong>${team.pts || 0}</strong></td>  <!-- ✅ FIXED -->
-    `;
-    
-    tbody.appendChild(tr);
-  });
-}
-
-
-function rebuildTableFromMatches() {
-  const tournament = getCurrentTournament();
-  if (!tournament) return;
-  
-  const table = {};
-  
-  
-  tournament.teams.forEach(team => {
-    table[team] = {
-      name: team,
-      played: 0,
-      wins: 0,
-      draws: 0,
-      losses: 0,
-      gf: 0,
-      ga: 0,
-      gd: 0,
-      pts: 0
-    };
-  });
-  
-  
-  tournament.matches.forEach(match => {
-    if (!match.played) return;
-    
-    const home = table[match.home];
-    const away = table[match.away];
-    if (!home || !away) return;
-    
-    const hg = Number(match.homeGoals ?? 0);
-    const ag = Number(match.awayGoals ?? 0);
-    
-    home.played++;
-    away.played++;
-    
-    home.gf += hg;
-    home.ga += ag;
-    
-    away.gf += ag;
-    away.ga += hg;
-    
-    if (hg > ag) {
-      home.wins++;
-      home.pts += 3;
-      away.losses++;
-    } else if (ag > hg) {
-      away.wins++;
-      away.pts += 3;
-      home.losses++;
-    } else {
-      home.draws++;
-      away.draws++;
-      home.pts += 1;
-      away.pts += 1;
-    }
-  });
-  
-  
-  Object.values(table).forEach(team => {
-    team.gd = team.gf - team.ga;
-  });
-  
-  tournament.table = Object.values(table);
-  updateTournament(tournament);
-  
-  if (typeof renderTable === "function") {
-    renderTable(tournament.table);
   }
 }
 

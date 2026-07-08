@@ -1043,3 +1043,815 @@ function shareKnockoutFixtures() {
   });
 }
 
+
+
+
+function populateTournamentMapping() {
+  const tournaments = getTournaments();
+  
+  const selects = {
+    league: document.getElementById("mapLeague"),
+    ucl: document.getElementById("mapUCL"),
+    uel: document.getElementById("mapUEL"),
+    cup: document.getElementById("mapCup"),
+    super: document.getElementById("mapSuper")
+  };
+  
+  
+  Object.values(selects).forEach(select => {
+    if (!select) return;
+    select.innerHTML = `<option value="">-- Select Tournament --</option>`;
+  });
+  
+  tournaments.forEach(t => {
+    const format = (t.format || "").toLowerCase();
+    
+    const optionHTML = `<option value="${t.id}">${t.name}</option>`;
+    
+    
+    if (format === "league") {
+      selects.league?.insertAdjacentHTML("beforeend", optionHTML);
+    }
+    
+    
+    else {
+      selects.ucl?.insertAdjacentHTML("beforeend", optionHTML);
+      selects.uel?.insertAdjacentHTML("beforeend", optionHTML);
+      selects.cup?.insertAdjacentHTML("beforeend", optionHTML);
+      selects.super?.insertAdjacentHTML("beforeend", optionHTML);
+    }
+  });
+}
+
+
+
+function setActiveTourPageButton(activeBtnId) {
+  document.getElementById("showTournamentsBtn")?.classList.remove("active");
+  document.getElementById("showPOTSBtn")?.classList.remove("active");
+  
+  document.getElementById(activeBtnId)?.classList.add("active");
+}
+
+
+function showTournamentView() {
+  document.getElementById("tournamentView").style.display = "block";
+  document.getElementById("potsView").style.display = "none";
+  
+  setActiveTourPageButton("showTournamentsBtn");
+}
+
+
+function showPOTSView() {
+  document.getElementById("tournamentView").style.display = "none";
+  document.getElementById("potsView").style.display = "block";
+  
+  setActiveTourPageButton("showPOTSBtn");
+  
+  populateTournamentMapping();
+  loadPOTConfig();
+  setupPOTListeners();
+  calculatePOT();
+}
+
+
+document.getElementById("showTournamentsBtn")
+  ?.addEventListener("click", showTournamentView);
+
+document.getElementById("showPOTSBtn")
+  ?.addEventListener("click", showPOTSView);
+showTournamentView();  
+  
+  
+  function savePOTConfig() {
+  const config = {
+    league: document.getElementById("mapLeague")?.value || "",
+    ucl: document.getElementById("mapUCL")?.value || "",
+    uel: document.getElementById("mapUEL")?.value || "",
+    cup: document.getElementById("mapCup")?.value || "",
+    super: document.getElementById("mapSuper")?.value || "",
+    lastUpdated: Date.now() 
+  };
+  
+  localStorage.setItem("posConfig", JSON.stringify(config));
+  
+  console.log("✅ POTS config saved:", config);
+}
+
+
+function setupPOTListeners() {
+  const ids = ["mapLeague", "mapUCL", "mapUEL", "mapCup", "mapSuper"];
+  
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    
+    el.addEventListener("change", () => {
+      savePOTConfig(); 
+      calculatePOT(); 
+      refreshPOTMapping();
+    });
+  });
+}
+
+
+function loadPOTConfig() {
+  const config = JSON.parse(localStorage.getItem("posConfig")) || {};
+  
+  document.getElementById("mapLeague").value = config.league || "";
+  document.getElementById("mapUCL").value = config.ucl || "";
+  document.getElementById("mapUEL").value = config.uel || "";
+  document.getElementById("mapCup").value = config.cup || "";
+  document.getElementById("mapSuper").value = config.super || "";
+}
+
+
+
+function refreshPOTMapping() {
+  const oldConfig = JSON.parse(localStorage.getItem("posConfig")) || {};
+  
+  populateTournamentMapping(); 
+  
+  
+  document.getElementById("mapLeague").value = oldConfig.league || "";
+  document.getElementById("mapUCL").value = oldConfig.ucl || "";
+  document.getElementById("mapUEL").value = oldConfig.uel || "";
+  document.getElementById("mapCup").value = oldConfig.cup || "";
+  document.getElementById("mapSuper").value = oldConfig.super || "";
+}
+
+
+
+function calculatePOT() {
+  
+  const config = JSON.parse(localStorage.getItem("posConfig") || "{}");
+  
+  const league = getTournament(config.league);
+  const ucl = getTournament(config.ucl);
+  const uel = getTournament(config.uel);
+  const cup = getTournament(config.cup);
+  const superCup = getTournament(config.super);
+  
+  
+  if (!league) {
+    document.querySelector("#posTable tbody").innerHTML = `
+      <tr>
+        <td colspan="10">Select a league tournament</td>
+      </tr>
+    `;
+    return;
+  }
+  
+  
+  const teams = {};
+  
+  
+ 
+  buildLeagueData(teams, league);
+  
+  
+ 
+  addCompetitionData(teams, ucl, "ucl");
+  addCompetitionData(teams, uel, "uel");
+  addCompetitionData(teams, cup, "cup");
+  addCompetitionData(teams, superCup, "super");
+  
+  
+  const ranking = Object.values(teams);
+  
+  
+  calculatePOTBonuses(ranking);
+  
+  
+  ranking.forEach(team => {
+    
+    team.total =
+      team.leaguePoints +
+      team.uclPoints +
+      team.uelPoints +
+      team.cupPoints +
+      team.superPoints +
+      team.attackPoints +
+      team.topScorerPoints +
+      team.defensePoints;
+    
+  });
+  
+  
+  ranking.sort((a, b) => b.total - a.total);
+  
+  
+  renderPOTTable(ranking);
+  
+}
+
+
+function getLeaguePoints(position) {
+  
+  const points = {
+    1: 75,
+    2: 65,
+    3: 55,
+    4: 45,
+    5: 35,
+    6: 25,
+    7: 15,
+    8: 10
+  };
+  
+  return points[position] || 5;
+  
+}
+
+
+
+function buildLeagueData(store, tournament) {
+
+  if (!Array.isArray(tournament.table)) return;
+
+
+
+  const sortedTable = [...tournament.table].sort((a, b) => {
+
+    if (b.pts !== a.pts) {
+      return b.pts - a.pts;
+    }
+
+    return b.gd - a.gd;
+
+  });
+
+
+  sortedTable.forEach((team, index) => {
+
+    const position = index + 1;
+
+
+    store[team.name] = {
+
+      name: team.name,
+
+      position: position,
+
+      gf: team.gf || 0,
+      ga: team.ga || 0,
+      played: team.played || 0,
+
+
+      leaguePoints:
+        getLeaguePoints(position),
+
+
+      uclPoints: 0,
+      uelPoints: 0,
+      cupPoints: 0,
+      superPoints: 0,
+
+      attackPoints: 0,
+      topScorerPoints: 0,
+      defensePoints: 0
+    };
+
+  });
+
+}
+
+
+
+
+function calculatePOTBonuses(teams) {
+  
+  
+  teams.forEach(team => {
+    
+    const gpg = team.played ?
+      team.gf / team.played :
+      0;
+    
+    team.attackPoints = Math.round(gpg * 10);
+    
+    team.topScorerPoints = 0;
+    team.defensePoints = 0;
+    
+  });
+  
+  
+  
+  const scorers = [...teams]
+    .sort((a, b) => b.gf - a.gf);
+  
+  
+  if (scorers[0]) scorers[0].topScorerPoints = 12;
+  if (scorers[1]) scorers[1].topScorerPoints = 8;
+  if (scorers[2]) scorers[2].topScorerPoints = 5;
+  
+  
+  
+  const defense = [...teams]
+    .sort((a, b) => a.ga - b.ga);
+  
+  
+  if (defense[0]) defense[0].defensePoints = 12;
+  if (defense[1]) defense[1].defensePoints = 8;
+  if (defense[2]) defense[2].defensePoints = 5;
+  
+}
+
+function renderPOTTable(teams) {
+  
+  const tbody = document.querySelector("#posTable tbody");
+  
+  if (!tbody) return;
+  
+  tbody.innerHTML = teams.map((team, index) => {
+    
+    return `
+      <tr>
+        <td>${index + 1}</td>
+
+        <td>
+          <strong>${team.name}</strong>
+        </td>
+
+        <td>${team.leaguePoints}</td>
+
+        <td>${team.uclPoints}</td>
+
+        <td>${team.uelPoints}</td>
+
+        <td>${team.cupPoints}</td>
+
+        <td>${team.superPoints}</td>
+
+        <td>${team.attackPoints}</td>
+
+        <td>${team.topScorerPoints}</td>
+
+        <td>${team.defensePoints}</td>
+
+        <td>
+          <strong>${team.total}</strong>
+        </td>
+
+      </tr>
+    `;
+    
+  }).join("");
+  
+}
+
+
+
+function addCompetitionData(store, tournament, type) {
+  
+  if (!tournament || !tournament.knockoutMatches) return;
+  
+  
+  const matches = tournament.knockoutMatches;
+  
+  
+  const getName = (team) => {
+    
+    if (!team) return null;
+    
+    if (typeof team === "string") {
+      return team;
+    }
+    
+    return team.name || null;
+    
+  };
+  
+  
+  let points;
+  
+  
+  if (type === "ucl") {
+    points = {
+      winner: 55,
+      runner: 35,
+      semi: 20,
+      quarter: 8
+    };
+  }
+  
+  
+  else if (type === "uel") {
+    points = {
+      winner: 35,
+      runner: 22,
+      semi: 12,
+      quarter: 5
+    };
+  }
+  
+  
+  else if (type === "cup") {
+    points = {
+      winner: 18,
+      runner: 10,
+      semi: 5,
+      quarter: 0
+    };
+  }
+  
+  
+  else if (type === "super") {
+    points = {
+      winner: 8,
+      runner: 4,
+      semi: 0,
+      quarter: 0
+    };
+  }
+  
+  
+  
+  const rounds = {};
+  
+  
+  matches.forEach(match => {
+    
+    if (!rounds[match.roundIndex]) {
+      rounds[match.roundIndex] = [];
+    }
+    
+    rounds[match.roundIndex].push(match);
+    
+  });
+  
+  
+  
+  const finalRound =
+    Math.max(...Object.keys(rounds));
+  
+  
+  const finalMatches =
+    rounds[finalRound] || [];
+  
+  
+  
+  // 🏆 Winner + Runner up
+  
+  const final = finalMatches[0];
+  
+  
+  if (final && final.played) {
+    
+    const winner =
+      final.homeGoals > final.awayGoals ?
+      getName(final.home) :
+      getName(final.away);
+    
+    
+    const runner =
+      final.homeGoals > final.awayGoals ?
+      getName(final.away) :
+      getName(final.home);
+    
+    
+    
+    if (store[winner]) {
+      
+      store[winner][type + "Points"] =
+        points.winner;
+      
+    }
+    
+    
+    if (store[runner]) {
+      
+      store[runner][type + "Points"] =
+        points.runner;
+      
+    }
+    
+  }
+  
+  
+  
+  
+  
+  Object.keys(rounds).forEach(round => {
+    
+    
+    const size =
+      rounds[round].length * 2;
+    
+    
+    
+    let bonus = 0;
+    
+    
+    if (size === 4) {
+      bonus = points.semi;
+    }
+    
+    
+    if (size === 8) {
+      bonus = points.quarter;
+    }
+    
+    
+    
+    rounds[round].forEach(match => {
+      
+      
+      if (!match.played) return;
+      
+      
+      const teams = [
+        getName(match.home),
+        getName(match.away)
+      ];
+      
+      
+      
+      teams.forEach(team => {
+        
+        
+        if (!store[team]) return;
+        
+        
+        
+        
+        if (store[team][type + "Points"] === 0) {
+          
+          store[team][type + "Points"] = bonus;
+          
+        }
+        
+      });
+      
+      
+    });
+    
+    
+  });
+  
+  
+}
+
+
+async function sharePOTSTable() {
+  const wrapper = document.querySelector('.pos-table-container');
+  const table = wrapper.querySelector('table');
+  
+  const prev = {
+    overflow: wrapper.style.overflow,
+    width: wrapper.style.width,
+    maxWidth: wrapper.style.maxWidth,
+    tableWidth: table.style.width
+  };
+  
+  wrapper.classList.add('screenshot-mode');
+  
+  wrapper.style.overflow = 'visible';
+  wrapper.style.width = 'max-content';
+  wrapper.style.maxWidth = 'none';
+  table.style.width = 'max-content';
+  
+  await new Promise(r => setTimeout(r, 150));
+  
+  try {
+    const canvas = await html2canvas(wrapper, {
+      backgroundColor: '#161b22',
+      scale: 2,
+      useCORS: true,
+      scrollX: 0,
+      scrollY: 0,
+      windowWidth: wrapper.scrollWidth
+    });
+    
+    canvas.toBlob(async (blob) => {
+      const file = new File([blob], 'rankings.png', { type: 'image/png' });
+      
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title: 'Player of the Season Rankings',
+          text: 'Player Of The Season Ranking',
+          files: [file]
+        });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'rankings.png';
+        a.click();
+        URL.revokeObjectURL(url);
+        showActionModal('Image downloaded! Share it manually.', 'success');
+      }
+    });
+    
+  } catch (err) {
+    console.error(err);
+    showActionModal('Could not capture table', 'delete');
+  } finally {
+    wrapper.classList.remove('screenshot-mode');
+    
+    wrapper.style.overflow = prev.overflow;
+    wrapper.style.width = prev.width;
+    wrapper.style.maxWidth = prev.maxWidth;
+    table.style.width = prev.tableWidth;
+  }
+}
+
+
+
+function rebuildTableFromMatches() {
+  const tournament = getCurrentTournament();
+  if (!tournament) return;
+
+  if (!tournament.prevRanks && Array.isArray(tournament.table) && tournament.table.length > 0) {
+    const initialRanks = {};
+    tournament.table.forEach((team, index) => {
+      initialRanks[team.name] = index;
+    });
+    tournament.prevRanks = initialRanks;
+  }
+
+  const prevRanks = tournament.prevRanks || {};
+  const table = {};
+
+  tournament.teams.forEach(team => {
+    table[team] = {
+      name: team,
+      played: 0,
+      wins: 0,
+      draws: 0,
+      losses: 0,
+      gf: 0,
+      ga: 0,
+      gd: 0,
+      pts: 0,
+      change: 'same'
+    };
+  });
+
+  tournament.matches.forEach(match => {
+    if (!match.played) return;
+
+    const home = table[match.home];
+    const away = table[match.away];
+    if (!home || !away) return;
+
+    const hg = Number(match.homeGoals ?? 0);
+    const ag = Number(match.awayGoals ?? 0);
+
+    home.played++;
+    away.played++;
+
+    home.gf += hg;
+    home.ga += ag;
+
+    away.gf += ag;
+    away.ga += hg;
+
+    if (hg > ag) {
+      home.wins++;
+      home.pts += 3;
+      away.losses++;
+    } else if (ag > hg) {
+      away.wins++;
+      away.pts += 3;
+      home.losses++;
+    } else {
+      home.draws++;
+      away.draws++;
+      home.pts += 1;
+      away.pts += 1;
+    }
+  });
+
+  Object.values(table).forEach(team => {
+    team.gd = team.gf - team.ga;
+  });
+
+  const sortedTable = Object.values(table).sort((a, b) => {
+    if (b.pts !== a.pts) return b.pts - a.pts;
+    if (b.gd !== a.gd) return b.gd - a.gd;
+    return b.gf - a.gf;
+  });
+
+  sortedTable.forEach((team, newIndex) => {
+    const prevIndex = prevRanks[team.name];
+
+    if (prevIndex !== undefined) {
+      if (newIndex < prevIndex) {
+        team.change = 'up';
+      } else if (newIndex > prevIndex) {
+        team.change = 'down';
+      } else {
+        team.change = 'same';
+      }
+    } else {
+      team.change = 'same';
+    }
+  });
+
+  tournament.table = sortedTable;
+  updateTournament(tournament);
+
+  if (typeof renderTable === "function") {
+    renderTable(tournament.table);
+  }
+}
+
+
+function getChangeIndicator(change) {
+  if (change === 'up') {
+    return `<span class="pos-change up" title="Moved up">&#9650;</span>`;
+  } else if (change === 'down') {
+    return `<span class="pos-change down" title="Moved down">&#9660;</span>`;
+  }
+  return `<span class="pos-change same" title="No change">&#8212;</span>`;
+}
+
+async function renderTable(data = []) {
+  const tbody = document.getElementById("tableBody");
+  if (!tbody) return;
+  
+  tbody.innerHTML = "";
+  
+  if (!Array.isArray(data) || data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;">No table data</td></tr>`;
+    return;
+  }
+  
+  const tournament = typeof getCurrentTournament === "function" ? getCurrentTournament() : null;
+  
+  data.forEach((team, index) => {
+    const tr = document.createElement("tr");
+    tr.setAttribute("data-row-index", index);
+    
+    const gd = team.gd ?? ((team.gf || 0) - (team.ga || 0));
+    const gdClass = gd < 0 ? 'neg' : '';
+    const indicator = getChangeIndicator(team.change);
+    const logoKey = tournament?.teamLogos?.[team.name];
+    
+    tr.innerHTML = `
+      <td>
+        <div class="rank-cell">
+          ${indicator}
+          <span class="rank-num">${index + 1}</span>
+        </div>
+      </td>
+      <td>
+        <div class="table-team-cell">
+          <div class="team-logo-placeholder">?</div>
+          <strong class="team-name">${team.name || ''}</strong>
+        </div>
+      </td>
+      <td>${team.played || 0}</td>
+      <td>${team.wins || 0}</td>
+      <td>${team.draws || 0}</td>
+      <td>${team.losses || 0}</td>
+      <td>${team.gf || 0}</td>
+      <td>${team.ga || 0}</td>
+      <td class="${gdClass}">${gd >= 0 ? '+' + gd : gd}</td>
+      <td><strong>${team.pts || 0}</strong></td>
+    `;
+    
+    if (logoKey && typeof getLogoFromIndexedDB === "function") {
+      getLogoFromIndexedDB(logoKey).then(base64Logo => {
+        const teamCell = tr.querySelector(".table-team-cell");
+        const placeholder = teamCell?.querySelector(".team-logo-placeholder");
+        
+        if (base64Logo && teamCell && placeholder) {
+          const img = document.createElement("img");
+          img.className = "table-team-logo";
+          img.src = base64Logo;
+          img.alt = team.name || "Logo";
+          teamCell.replaceChild(img, placeholder);
+        }
+      }).catch(err => console.error("Error loading table team logo:", err));
+    }
+    
+    tbody.appendChild(tr);
+  });
+}
+
+
+
+function recordMatchResult(matchId, homeGoals, awayGoals) {
+  const tournament = getCurrentTournament();
+  if (!tournament) return;
+
+  if (Array.isArray(tournament.table) && tournament.table.length > 0) {
+    const currentRanks = {};
+    tournament.table.forEach((team, index) => {
+      currentRanks[team.name] = index;
+    });
+    tournament.prevRanks = currentRanks;
+  }
+
+  const match = tournament.matches.find(m => String(m.id) === String(matchId));
+  if (match) {
+    match.played = true;
+    match.homeGoals = Number(homeGoals);
+    match.awayGoals = Number(awayGoals);
+  }
+
+  updateTournament(tournament);
+  rebuildTableFromMatches();
+}
+

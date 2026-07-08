@@ -139,19 +139,15 @@ function getAllTournaments() {
   return JSON.parse(localStorage.getItem("tournaments") || "[]");
 }
 
-function removeTournament(id) {
-  let tournaments = getAllTournaments();
-  tournaments = tournaments.filter(t => t.id !== id);
-  localStorage.setItem("tournaments", JSON.stringify(tournaments));
-}
-
 async function removeTournament(id) {
   const idStr = String(id).trim();
   
   try {
     let tournaments = JSON.parse(localStorage.getItem("tournaments") || "[]");
     
-    tournaments = tournaments.filter(t => t.id !== idStr);
+    tournaments = tournaments.filter(
+      t => String(t.id).trim() !== idStr
+    );
     
     localStorage.setItem("tournaments", JSON.stringify(tournaments));
     
@@ -159,7 +155,7 @@ async function removeTournament(id) {
       allTournaments = tournaments;
     }
     
-    if (currentTournament && currentTournament.id === idStr) {
+    if (currentTournament && String(currentTournament.id).trim() === idStr) {
       currentTournament = null;
       localStorage.removeItem("currentTournamentId");
     }
@@ -175,7 +171,9 @@ async function removeTournament(id) {
 
 async function deleteTournament(id) {
   const tournaments = getAllTournaments();
-  const tournament = tournaments.find(t => t.id === String(id));
+  const tournament = tournaments.find(
+    t => String(t.id).trim() === String(id).trim()
+  );
   
   if (!tournament) {
     showAlert("Tournament not found.");
@@ -203,7 +201,7 @@ function hideCreateTournament() {
 }
 
 function openCreateTournament() {
- 
+  
   document.getElementById("createTour").style.display = "block";
 }
 
@@ -446,6 +444,8 @@ function handleMenuAction(action) {
     importTournament: openImportTournament,
     openTournament: openTournamentInfo,
     deleteTournament: deleteTournamentInfo,
+    sharePOTS: sharePOTS,
+    openPOTS: openPOTSSetup,
     shareGroupTable: shareCupTable,
     
     deleteCupTeam: deleteCupTeamInfo
@@ -478,10 +478,13 @@ const menuConfig = {
     { label: "Create New Tournament", action: "createTournament" },
     { label: "Import Tournament", action: "importTournament" },
     { label: "Export Tournament", action: "enableExportMode" },
-    { label: "Delete Tournament", action: "deleteTournament" }
+    { label: "Delete Tournament", action: "deleteTournament" },
+    { label: "Setup POTS Tournaments", action: "openPOTS" },
+    { label: "Share POTS Ranking", action: "sharePOTS" }
     
   ]
 };
+
 
 function openAddTeam() {
   toggleView('team');
@@ -489,6 +492,38 @@ function openAddTeam() {
   document.getElementById("addNewTeam").style.display = "block";
   
 }
+
+
+function openPOTSSetup() {
+  showPOTSView();
+  closeMenu();
+  document.getElementById("POTS").style.display = "block";
+  
+}
+
+function showRulesModal() {
+  document.getElementById("rulesModal").style.display = "flex";
+}
+
+function hideRulesModal() {
+  document.getElementById("rulesModal").style.display = "none";
+}
+
+
+function closePOTSSetup() {
+  closeMenu();
+  document.getElementById("POTS").style.display = "none";
+  
+}
+
+function sharePOTS() {
+  showPOTSView();
+  closeMenu();
+  sharePOTSTable();
+  
+}
+
+
 
 function closeAddTeam() {
   document.getElementById("addNewTeam").style.display = "none";

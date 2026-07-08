@@ -20,15 +20,27 @@
   
   <!-- TourList header -->
   <div class="header" id="tourListPageHead">
-    <h1 class="appHeader"> Tournaments</h1>
-    
+    <div class="page-toggle">
+      
+      <button id="showTournamentsBtn">
+        <span class="btn-icon">🏆</span>
+        <span class="btn-text">Tourmanents</span>
+      </button>
+      
+      <button id="showPOTSBtn">
+        <span class="btn-icon">🏅</span>
+        <span class="btn-text">Player of The Seasons Ranking</span>
+      </button>
+      
+      
+    </div>
     
     <button class="menu-btn" onclick="setPageAndToggleMenu('tournaments')">
       ☰
     </button>
   </div>
   
- 
+  
   
   <!-- Table Page Head -->
   <div id="tablePageHead" style="display:none">
@@ -177,20 +189,20 @@
     
     
     <div class="bracketControls" id="bracketControl" style="display:none">
-        <div class="bracketTopActions">
-  
-  <button class="zoomout bracket-tab active" onclick="toggleBracketMode('fixtures')">
-    <span class="btn-icon">📋</span>
-    <span class="btn-text">Knockout Matches</span>
-  </button>
-  
-  <button class="zoomout bracket-tab" onclick="toggleBracketMode('bracket')">
-    <span class="btn-icon">🔀</span>
-    <span class="btn-text">Full Bracket</span>
-  </button>
-  
-</div>
-
+      <div class="bracketTopActions">
+        
+        <button class="zoomout bracket-tab active" onclick="toggleBracketMode('fixtures')">
+          <span class="btn-icon">📋</span>
+          <span class="btn-text">Knockout Matches</span>
+        </button>
+        
+        <button class="zoomout bracket-tab" onclick="toggleBracketMode('bracket')">
+          <span class="btn-icon">🔀</span>
+          <span class="btn-text">Full Bracket</span>
+        </button>
+        
+      </div>
+      
       <button class="zoomout" onclick="zoomOutBracket()">
         <span class="btn-icon">-</span>
         <span class="btn-text">Zoom Out</span>
@@ -201,16 +213,16 @@
         <span class="btn-text">Zoom In</span>
       </button>
       
-     <button class="btn-create" onclick="shareKnockoutFixtures()">
-  <span class="btn-icon">📷</span>
-  <span class="btn-text">Share Matches</span>
-</button>
+      <button class="btn-create" onclick="shareKnockoutFixtures()">
+        <span class="btn-icon">📷</span>
+        <span class="btn-text">Share Matches</span>
+      </button>
       <button class="btn-create" onclick="shareBracket()">
         <span class="btn-icon">📷</span>
         <span class="btn-text">Share Bracket</span>
       </button>
       
-        </div>
+    </div>
     
   </section>
   
@@ -234,10 +246,12 @@
   </nav>
   
   <!-- All main content -->
-
+  
   <main>
     
     <section id="listOfTournamentPage" class="page">
+      
+      
       
       <div id="createTour" class="modal-overlay" style="display:none">
         
@@ -245,43 +259,75 @@
           <div class="create-tournament">
             <h2>Create New Tournament</h2>
             
-          <label>Tournament Name</label>
-<input type="text" id="tournamentNameInput" placeholder="Tournament name" />
-
-<label>Format</label>
-<select id="tournamentFormatInput">
-  <option value="league">Round Robin (League)</option>
-  <option value="cup">Cup</option>
-</select>
-<div class="start-endDate">
-<label>Select Start Date (First Match Date)</label>
-<input type="date" id="tournamentStartDate">
-
-<label> Select End Date (Last Match Date)</label>
-<input type="date" id="tournamentEndDate">
-</div>
-
-<div class="matchdaySelectsection">
-<label>Select Match Days (Days of the Weeks that Matches will Played)</label>
-<div id="matchDaysSelector">
-  <label><input type="checkbox" value="1"> Mon</label>
-  <label><input type="checkbox" value="2"> Tue</label>
-  <label><input type="checkbox" value="3"> Wed</label>
-  <label><input type="checkbox" value="4"> Thu</label>
-  <label><input type="checkbox" value="5"> Fri</label>
-  <label><input type="checkbox" value="6"> Sat</label>
-  <label><input type="checkbox" value="0"> Sun</label>
-</div>
-</div>
+            <label>Tournament Name</label>
+            <input type="text" id="tournamentNameInput" placeholder="Tournament name" />
+            
+            <label>Format</label>
+            <select id="tournamentFormatInput">
+              <option value="league">Round Robin (League)</option>
+              <option value="cup">Cup</option>
+            </select>
+            <div class="start-endDate">
+              <label>Select Start Date (First Match Date)</label>
+              <input type="date" id="tournamentStartDate">
+              
+              <label> Select End Date (Last Match Date)</label>
+              <input type="date" id="tournamentEndDate">
+            </div>
+            
+            <div class="matchdaySelectsection">
+              <label>Select Match Days (Days of the Weeks that Matches will Played)</label>
+              <div id="matchDaysSelector">
+                <label><input type="checkbox" value="1"> Mon</label>
+                <label><input type="checkbox" value="2"> Tue</label>
+                <label><input type="checkbox" value="3"> Wed</label>
+                <label><input type="checkbox" value="4"> Thu</label>
+                <label><input type="checkbox" value="5"> Fri</label>
+                <label><input type="checkbox" value="6"> Sat</label>
+                <label><input type="checkbox" value="0"> Sun</label>
+              </div>
+            </div>
             <button class="btn-create" onclick="tournamentCreator()">Create</button>
             <button class="btn-close" onclick="hideCreateTournament()">Close</button>
           </div>
         </div>
       </div>
-      <div class="tourListWrap">
-        <div id="tournamentList"></div>
+      
+      <div id="tournamentView">
+        <div class="tourListWrap">
+          <div id="tournamentList"></div>
+        </div>
       </div>
       
+      <div id="potsView" style="display:none;">
+        <section id="playerOfSeason">
+          
+          
+          
+          <!-- Table -->
+          <div class="pos-table-container">
+            <table id="posTable">
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Name</th>
+                  <th>League</th>
+                  <th>UCL</th>
+                  <th>UEL</th>
+                  <th>L/Cup</th>
+                  <th>SuperCup</th>
+                  <th>GPGx10</th>
+                  <th>T/Scorer</th>
+                  <th>Defense</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          
+        </section>
+      </div>
     </section>
     
     
@@ -600,6 +646,116 @@
   
   
   
+  
+  <!-- Tournament Mapping -->
+  <div id="POTS" class="pos-mapping" style="display:none">
+    <div class="POTS-header" <h3> Configure POTS Tournaments
+      </h3>
+      <p> (This Tournaments will be used to calculate Points for the Player of the Season (POTS) Award Ranking.
+        <br> <span class="btn-rules" onclick="showRulesModal()">
+        
+          Click here to see how points are allocated)
+        </span>
+      </p>
+    </div>
+    <div>
+      <label>League:</label>
+      <select id="mapLeague"></select>
+    </div>
+    
+    <div>
+      <label>Champions League:</label>
+      <select id="mapUCL"></select>
+    </div>
+    
+    <div>
+      <label>Europa League:</label>
+      <select id="mapUEL"></select>
+    </div>
+    
+    <div>
+      <label>League Cup:</label>
+      <select id="mapCup"></select>
+    </div>
+    
+    <div>
+      <label>Super Cup:</label>
+      <select id="mapSuper"></select>
+    </div>
+    <button onclick="closePOTSSetup()"> Done</button>
+  </div>
+  
+  
+  <div id="rulesModal" class="modal-overlay" style="display:none">
+    
+    <div class="rules-modal-content">
+      
+      <h2>📊 Points Allocation Rules</h2>
+      
+      <div class="rules-section">
+        
+        <h3>🏆 League Points</h3>
+        <ul>
+          <li>1st → 75 pts</li>
+          <li>2nd → 65 pts</li>
+          <li>3rd → 55 pts</li>
+          <li>4th → 45 pts</li>
+          <li>5th → 35 pts</li>
+          <li>6th → 25 pts</li>
+          <li>7th → 15 pts</li>
+          <li>8th → 10 pts</li>
+          <li>Others → 5 pts</li>
+        </ul>
+        
+        <h3>🌍 Champions League (UCL)</h3>
+        <ul>
+          <li>Winner → 55 pts</li>
+          <li>Runner-up → 35 pts</li>
+          <li>Semi-final → 20 pts</li>
+          <li>Quarter-final → 8 pts</li>
+        </ul>
+        
+        <h3>🌍 Europa League (UEL)</h3>
+        <ul>
+          <li>Winner → 35 pts</li>
+          <li>Runner-up → 22 pts</li>
+          <li>Semi-final → 12 pts</li>
+          <li>Quarter-final → 5 pts</li>
+        </ul>
+        
+        <h3>🏆 League Cup</h3>
+        <ul>
+          <li>Winner → 18 pts</li>
+          <li>Runner-up → 10 pts</li>
+          <li>Semi-final → 5 pts</li>
+        </ul>
+        
+        <h3>⚡ Super Cup</h3>
+        <ul>
+          <li>Winner → 8 pts</li>
+          <li>Runner-up → 4 pts</li>
+        </ul>
+        
+        <h3>🔥 Bonus Points</h3>
+        <ul>
+          <li>Goals per game (GPG)× 10 = Points</li>
+          <li>Top Scorer (TS)
+            <br> 1st-12pts / 2nd-8pts/ 3rd-5pts
+          </li>
+          <li>Best Defense(Least Goal Against) →
+            <br>1st-12pts/ 2nd-8pts / 3rd-5pts
+          </li>
+        </ul>
+        
+      </div>
+      
+      <button onclick="hideRulesModal()">
+        Close
+      </button>
+      
+    </div>
+    
+  </div>
   
   
   

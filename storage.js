@@ -133,3 +133,7 @@ function openTournament(id) {
     goToCupPage();
   }
 }
+
+
+
+
