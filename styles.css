@@ -719,7 +719,7 @@ thead th {
   letter-spacing: 0.8px;
   position: sticky;
   top: 0;
-  z-index: 20;
+  z-index: 10;
 }
 
 
@@ -791,13 +791,13 @@ td:nth-child(10) {
 }
 
 
-th:first-child,
+
 td:first-child,
 th:nth-child(2),
 td:nth-child(2) {
   
   background: white;
-  z-index: 2;
+  z-index: 20;
 }
 
 th:first-child,
@@ -858,7 +858,9 @@ tr:hover td:nth-child(2) {
   background-color: white;
 }
 
-
+th:first-child {
+  z-index: 25;
+}
 
 tbody tr:nth-child(1) td {
   background: #fff7d6;
