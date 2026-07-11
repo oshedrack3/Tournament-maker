@@ -488,7 +488,7 @@ select:focus {
 
 .bottom-nav {
   position: fixed;
-  bottom: 3px;
+  bottom: 12px;
   left: 30px;
   right: 30px;
   height: 45px;
@@ -1112,7 +1112,7 @@ tbody tr:nth-child(1) td {
   display: flex;
   gap: 10px;
   position: fixed;
-  bottom: 5px;
+  bottom: 12px;
   left: 20px;
   right: 20px;
   height: 50px;
