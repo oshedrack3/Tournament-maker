@@ -982,7 +982,7 @@ function shareKnockoutFixtures() {
     showAlert('Knockout fixture list not found!');
     return;
   }
-
+  
   const options = {
     backgroundColor: '#0d1117',
     useCORS: true,
@@ -1002,7 +1002,7 @@ function shareKnockoutFixtures() {
         cloned.style.overflow = 'visible';
         cloned.style.height = 'auto';
         cloned.style.width = '100%';
-
+        
         cloned.querySelectorAll('*').forEach(el => {
           el.style.webkitFontSmoothing = 'antialiased';
           el.style.textRendering = 'geometricPrecision';
@@ -1010,20 +1010,19 @@ function shareKnockoutFixtures() {
       }
     }
   };
-
+  
   html2canvas(element, options).then(canvas => {
     canvas.toBlob(blob => {
       if (!blob) {
         show('Failed to process screenshot image.');
         return;
       }
-
+      
       const file = new File(
         [blob],
-        `knockout-${fileName}.png`,
-        { type: 'image/png' }
+        `knockout-${fileName}.png`, { type: 'image/png' }
       );
-
+      
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         navigator.share({
           files: [file],
@@ -1093,43 +1092,15 @@ function setActiveTourPageButton(activeBtnId) {
 }
 
 
-function showTournamentView() {
-  document.getElementById("tournamentView").style.display = "block";
-  document.getElementById("potsView").style.display = "none";
-  
-  setActiveTourPageButton("showTournamentsBtn");
-}
 
-
-function showPOTSView() {
-  document.getElementById("tournamentView").style.display = "none";
-  document.getElementById("potsView").style.display = "block";
-  
-  setActiveTourPageButton("showPOTSBtn");
-  
-  populateTournamentMapping();
-  loadPOTConfig();
-  setupPOTListeners();
-  calculatePOT();
-}
-
-
-document.getElementById("showTournamentsBtn")
-  ?.addEventListener("click", showTournamentView);
-
-document.getElementById("showPOTSBtn")
-  ?.addEventListener("click", showPOTSView);
-showTournamentView();  
-  
-  
-  function savePOTConfig() {
+function savePOTConfig() {
   const config = {
     league: document.getElementById("mapLeague")?.value || "",
     ucl: document.getElementById("mapUCL")?.value || "",
     uel: document.getElementById("mapUEL")?.value || "",
     cup: document.getElementById("mapCup")?.value || "",
     super: document.getElementById("mapSuper")?.value || "",
-    lastUpdated: Date.now() 
+    lastUpdated: Date.now()
   };
   
   localStorage.setItem("posConfig", JSON.stringify(config));
@@ -1146,8 +1117,8 @@ function setupPOTListeners() {
     if (!el) return;
     
     el.addEventListener("change", () => {
-      savePOTConfig(); 
-      calculatePOT(); 
+      savePOTConfig();
+      calculatePOT();
       refreshPOTMapping();
     });
   });
@@ -1169,7 +1140,7 @@ function loadPOTConfig() {
 function refreshPOTMapping() {
   const oldConfig = JSON.parse(localStorage.getItem("posConfig")) || {};
   
-  populateTournamentMapping(); 
+  populateTournamentMapping();
   
   
   document.getElementById("mapLeague").value = oldConfig.league || "";
@@ -1205,11 +1176,11 @@ function calculatePOT() {
   const teams = {};
   
   
- 
+  
   buildLeagueData(teams, league);
   
   
- 
+  
   addCompetitionData(teams, ucl, "ucl");
   addCompetitionData(teams, uel, "uel");
   addCompetitionData(teams, cup, "cup");
@@ -1265,54 +1236,53 @@ function getLeaguePoints(position) {
 
 
 function buildLeagueData(store, tournament) {
-
+  
   if (!Array.isArray(tournament.table)) return;
-
-
-
+  
+  
+  
   const sortedTable = [...tournament.table].sort((a, b) => {
-
+    
     if (b.pts !== a.pts) {
       return b.pts - a.pts;
     }
-
+    
     return b.gd - a.gd;
-
+    
   });
-
-
+  
+  
   sortedTable.forEach((team, index) => {
-
+    
     const position = index + 1;
-
-
+    
+    
     store[team.name] = {
-
+      
       name: team.name,
-
+      
       position: position,
-
+      
       gf: team.gf || 0,
       ga: team.ga || 0,
       played: team.played || 0,
-
-
-      leaguePoints:
-        getLeaguePoints(position),
-
-
+      
+      
+      leaguePoints: getLeaguePoints(position),
+      
+      
       uclPoints: 0,
       uelPoints: 0,
       cupPoints: 0,
       superPoints: 0,
-
+      
       attackPoints: 0,
       topScorerPoints: 0,
       defensePoints: 0
     };
-
+    
   });
-
+  
 }
 
 
@@ -1660,7 +1630,7 @@ async function sharePOTSTable() {
 function rebuildTableFromMatches() {
   const tournament = getCurrentTournament();
   if (!tournament) return;
-
+  
   if (!tournament.prevRanks && Array.isArray(tournament.table) && tournament.table.length > 0) {
     const initialRanks = {};
     tournament.table.forEach((team, index) => {
@@ -1668,10 +1638,10 @@ function rebuildTableFromMatches() {
     });
     tournament.prevRanks = initialRanks;
   }
-
+  
   const prevRanks = tournament.prevRanks || {};
   const table = {};
-
+  
   tournament.teams.forEach(team => {
     table[team] = {
       name: team,
@@ -1686,26 +1656,26 @@ function rebuildTableFromMatches() {
       change: 'same'
     };
   });
-
+  
   tournament.matches.forEach(match => {
     if (!match.played) return;
-
+    
     const home = table[match.home];
     const away = table[match.away];
     if (!home || !away) return;
-
+    
     const hg = Number(match.homeGoals ?? 0);
     const ag = Number(match.awayGoals ?? 0);
-
+    
     home.played++;
     away.played++;
-
+    
     home.gf += hg;
     home.ga += ag;
-
+    
     away.gf += ag;
     away.ga += hg;
-
+    
     if (hg > ag) {
       home.wins++;
       home.pts += 3;
@@ -1721,20 +1691,20 @@ function rebuildTableFromMatches() {
       away.pts += 1;
     }
   });
-
+  
   Object.values(table).forEach(team => {
     team.gd = team.gf - team.ga;
   });
-
+  
   const sortedTable = Object.values(table).sort((a, b) => {
     if (b.pts !== a.pts) return b.pts - a.pts;
     if (b.gd !== a.gd) return b.gd - a.gd;
     return b.gf - a.gf;
   });
-
+  
   sortedTable.forEach((team, newIndex) => {
     const prevIndex = prevRanks[team.name];
-
+    
     if (prevIndex !== undefined) {
       if (newIndex < prevIndex) {
         team.change = 'up';
@@ -1747,10 +1717,10 @@ function rebuildTableFromMatches() {
       team.change = 'same';
     }
   });
-
+  
   tournament.table = sortedTable;
   updateTournament(tournament);
-
+  
   if (typeof renderTable === "function") {
     renderTable(tournament.table);
   }
@@ -1763,7 +1733,7 @@ function getChangeIndicator(change) {
   } else if (change === 'down') {
     return `<span class="pos-change down" title="Moved down">&#9660;</span>`;
   }
-  return `<span class="pos-change same" title="No change">&#8212;</span>`;
+  return `<span class="pos-change same" title="No change"></span>`;
 }
 
 async function renderTable(data = []) {
@@ -1791,8 +1761,8 @@ async function renderTable(data = []) {
     tr.innerHTML = `
       <td>
         <div class="rank-cell">
-          ${indicator}
           <span class="rank-num">${index + 1}</span>
+          ${indicator}
         </div>
       </td>
       <td>
@@ -1835,7 +1805,7 @@ async function renderTable(data = []) {
 function recordMatchResult(matchId, homeGoals, awayGoals) {
   const tournament = getCurrentTournament();
   if (!tournament) return;
-
+  
   if (Array.isArray(tournament.table) && tournament.table.length > 0) {
     const currentRanks = {};
     tournament.table.forEach((team, index) => {
@@ -1843,15 +1813,393 @@ function recordMatchResult(matchId, homeGoals, awayGoals) {
     });
     tournament.prevRanks = currentRanks;
   }
-
+  
   const match = tournament.matches.find(m => String(m.id) === String(matchId));
   if (match) {
     match.played = true;
     match.homeGoals = Number(homeGoals);
     match.awayGoals = Number(awayGoals);
   }
-
+  
   updateTournament(tournament);
   rebuildTableFromMatches();
 }
 
+
+
+function toggleDropdown() {
+  document.getElementById("dropdownMenu").classList.toggle("show");
+}
+
+function handleMenuClick(value) {
+  // actions
+  if (value === "fullview") toggleScreenshotMode();
+  else if (value === "share") shareTable();
+  else toggleView(value);
+  
+  
+  document.getElementById("dropdownMenu").classList.remove("show");
+}
+
+
+
+document.addEventListener("click", function(e) {
+  const dropdown = document.querySelector(".custom-dropdown");
+  if (!dropdown.contains(e.target)) {
+    document.getElementById("dropdownMenu").classList.remove("show");
+  }
+});
+
+
+function updateDropdownLabel(view) {
+  const dropdownToggle = document.querySelector(".dropdown-toggle");
+  const labels = {
+    table: "📊 Table",
+    forms: "📈 Forms",
+    teams: "👥 Teams",
+    records: "🏆 Records"
+  };
+  
+  dropdownToggle.textContent = labels[view] || "📊 Table";
+}
+
+
+
+
+let currentSwapView = 0;
+const slider = document.getElementById("viewSlider");
+
+function updateSwapView() {
+  slider.style.transform = `translate3d(-${currentSwapView * 50}%, 0, 0)`;
+  
+  if (currentSwapView === 0) {
+    showTournamentView();
+  } else {
+    showPOTSView();
+  }
+}
+
+
+let startX = 0;
+
+document.addEventListener("touchstart", (e) => {
+  startX = e.touches[0].clientX;
+});
+
+document.addEventListener("touchend", (e) => {
+  let endX = e.changedTouches[0].clientX;
+  let diff = startX - endX;
+  
+  if (diff > 50) {
+    currentSwapView = 1;
+  } else if (diff < -50) {
+    currentSwapView = 0;
+  }
+  
+  updateSwapView();
+});
+
+
+function showPOTSView() {
+  document.getElementById("viewIndicator").textContent = "POTS Rankings";
+  
+  populateTournamentMapping();
+  loadPOTConfig();
+  setupPOTListeners();
+  calculatePOT();
+}
+
+
+function showTournamentView() {
+  document.getElementById("viewIndicator").textContent = "Tournaments";
+}
+
+function enableSwipeForRounds() {
+  const container = document.getElementById("fixtureList");
+  if (!container) return;
+  
+  let touchStartX = 0;
+  let touchEndX = 0;
+  const swipeThreshold = 60;
+  
+  container.addEventListener("touchstart", e => {
+    touchStartX = e.changedTouches[0].screenX;
+  }, { passive: true });
+  
+  container.addEventListener("touchend", e => {
+    touchEndX = e.changedTouches[0].screenX;
+    handleSwipe();
+  }, { passive: true });
+  
+  
+  let mouseDown = false;
+  container.addEventListener("mousedown", e => {
+    mouseDown = true;
+    touchStartX = e.screenX;
+  });
+  container.addEventListener("mouseup", e => {
+    if (!mouseDown) return;
+    mouseDown = false;
+    touchEndX = e.screenX;
+    handleSwipe();
+  });
+  
+  function handleSwipe() {
+    const diff = touchEndX - touchStartX;
+    
+    if (Math.abs(diff) < swipeThreshold) return;
+    
+    if (diff > 0) {
+      
+      console.log("[Swipe] Right -> Prev Round");
+      prevRound();
+    } else {
+      
+      console.log("[Swipe] Left -> Next Round");
+      nextRound();
+    }
+  }
+}
+
+
+
+function getMaxRound() {
+  const tournament = getCurrentTournament();
+  if (!tournament || !tournament.matches?.length) return 1;
+  
+  const rounds = tournament.matches.map(m => m.round || 1);
+  return Math.max(...rounds);
+}
+
+
+
+function renderRoundList() {
+  const container = document.getElementById("roundCarousel");
+  if (!container) return;
+  
+  const tournament = getCurrentTournament();
+  if (!tournament || !tournament.matches) return;
+  
+  const current = getCurrentRound();
+  const max = Math.max(...tournament.matches.map(m => m.round || 1), 1);
+  
+  let track = container.querySelector(".roundTrack");
+  if (!track) {
+    track = document.createElement("div");
+    track.className = "roundTrack";
+    container.appendChild(track);
+  }
+  
+  track.innerHTML = "";
+  
+  for (let i = 1; i <= max; i++) {
+    const el = document.createElement("h2");
+    el.className = "roundText";
+    if (i === current) el.classList.add("active");
+    else if (i === current - 1) el.classList.add("prev");
+    else if (i === current + 1) el.classList.add("next");
+    el.textContent = `Round ${i} / ${max}`;
+    el.onclick = () => goToRound(i);
+    track.appendChild(el);
+  }
+  
+  requestAnimationFrame(centerActiveRound);
+}
+
+function centerActiveRound() {
+  const container = document.getElementById("roundCarousel");
+  const track = container?.querySelector(".roundTrack");
+  const active = track?.querySelector(".roundText.active");
+  if (!container || !track || !active) return;
+  
+  const containerRect = container.getBoundingClientRect();
+  const activeRect = active.getBoundingClientRect();
+  
+  const offset = activeRect.left - containerRect.left -
+    containerRect.width / 2 +
+    activeRect.width / 2;
+  
+  const currentTranslate = getTranslateX(track);
+  
+  track.style.transform = `translateX(${currentTranslate - offset}px)`;
+}
+
+function goToRound(round) {
+  setCurrentRound(round);
+  
+  updateRoundClasses();
+  requestAnimationFrame(centerActiveRound);
+}
+
+function updateRoundClasses() {
+  const track = document.querySelector(".roundTrack");
+  if (!track) return;
+  
+  const current = getCurrentRound();
+  
+  track.querySelectorAll(".roundText").forEach((el, index) => {
+    const i = index + 1;
+    
+    el.classList.remove("active", "prev", "next");
+    
+    if (i === current) el.classList.add("active");
+    else if (i === current - 1) el.classList.add("prev");
+    else if (i === current + 1) el.classList.add("next");
+  });
+}
+
+function getTranslateX(el) {
+  const style = window.getComputedStyle(el);
+  const matrix = new DOMMatrixReadOnly(style.transform);
+  return matrix.m41;
+}
+
+
+function shareForm() {
+  const element = document.getElementById('formContainer');
+  
+  const titleText = 'Recent Forms';
+  const formText = titleText.replace(/\s/g, '-');
+  
+  if (!element) {
+    showAlert('Screenshot target area not found!');
+    return;
+  }
+  
+  const options = {
+    useCORS: true,
+    allowTaint: true,
+    logging: false,
+    imageTimeout: 0,
+    
+    scale: Math.min(4, window.devicePixelRatio * 2),
+    
+    onclone: (doc) => {
+      const cloned = doc.getElementById('formContainer');
+      if (cloned) {
+        cloned.style.background = '#21262d';
+        cloned.style.webkitFontSmoothing = 'antialiased';
+        cloned.style.textRendering = 'geometricPrecision';
+      }
+    }
+  };
+  
+  html2canvas(element, options).then(canvas => {
+    
+    canvas.toBlob(blob => {
+      if (!blob) {
+        show('Failed to process screenshot image.');
+        return;
+      }
+      
+      const file = new File(
+        [blob],
+        `form-${formText}.png`, { type: 'image/png' }
+      );
+      
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({
+          files: [file],
+          title: titleText,
+          text: `Check out the latest ${titleText}!`
+        }).catch(err => console.log('Share dismissed', err));
+      } else {
+        const link = document.createElement('a');
+        link.download = `form-${formText}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      }
+    }, 'image/png');
+    
+  }).catch(err => {
+    console.error('Screenshot failed:', err);
+    showAlert('Could not take screenshot');
+  });
+}
+
+
+
+function shareBracket() {
+  const element = document.getElementById('bracket-container');
+  const titleText = document.getElementById('roundLabel')?.textContent || 'Bracket';
+  const fileName = titleText.replace(/\s/g, '-');
+  
+  if (!element) {
+    showAlert('Bracket container not found!');
+    return;
+  }
+  
+  
+  const width = element.scrollWidth;
+  const height = element.scrollHeight;
+  
+  const options = {
+    useCORS: true,
+    allowTaint: false,
+    logging: false,
+    imageTimeout: 0,
+    backgroundColor: '#21262d',
+    scale: Math.min(2, window.devicePixelRatio),
+    
+    
+    width: width,
+    height: height,
+    windowWidth: width,
+    windowHeight: height,
+    scrollX: 0,
+    scrollY: 0,
+    
+    onclone: (doc) => {
+      const original = doc.getElementById('bracket-container');
+      if (!original) return;
+      
+      
+      original.style.transform = 'none';
+      original.style.position = 'static';
+      original.style.margin = '0';
+      
+      
+      doc.body.style.overflow = 'visible';
+      doc.documentElement.style.overflow = 'visible';
+    }
+  };
+  
+  html2canvas(element, options).then(canvas => {
+    canvas.toBlob(blob => {
+      if (!blob) {
+        showAlert('Failed to process screenshot image.');
+        return;
+      }
+      
+      const file = new File([blob], `bracket-${fileName}.png`, { type: 'image/png' });
+      
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({
+          files: [file],
+          title: titleText,
+          text: `Check out the latest ${titleText}!`
+        }).catch(() => {});
+      } else {
+        const link = document.createElement('a');
+        link.download = `bracket-${fileName}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      }
+    }, 'image/png');
+  }).catch((err) => {
+    console.error(err);
+    showAlert('Could not take screenshot');
+  });
+}
+
+
+
+
+
+
+
+
+
+
+
+document.addEventListener("DOMContentLoaded", enableSwipeForRounds);

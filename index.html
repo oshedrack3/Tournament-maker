@@ -22,15 +22,9 @@
   <div class="header" id="tourListPageHead">
     <div class="page-toggle">
       
-      <button id="showTournamentsBtn">
-        <span class="btn-icon">🏆</span>
-        <span class="btn-text">Tourmanents</span>
-      </button>
-      
-      <button id="showPOTSBtn">
-        <span class="btn-icon">🏅</span>
-        <span class="btn-text">Player of The Seasons Ranking</span>
-      </button>
+      <div class="view-indicator" id="viewIndicator">
+        Tournaments
+      </div>
       
       
     </div>
@@ -50,37 +44,6 @@
     <div class="topSection">
       <h3 id="leagueName">Tournament Name</h3>
     </div>
-    <div class="btn-tablePage">
-      <button onclick="toggleScreenshotMode()">
-        <span class="btn-icon">🖥️</span>
-        <span class="btn-text">FullView</span>
-      </button>
-      
-      <button onclick="shareTable()">
-        <span class="btn-icon">📷</span>
-        <span class="btn-text">Share</span>
-      </button>
-      
-      <button class="btn-add" data-view="team" onclick="toggleView('team')">
-        <span class="btn-icon">👥</span>
-        <span class="btn-text">Teams</span>
-      </button>
-      
-      <button id="formToggleBtn" data-view="form" onclick="toggleView('form')">
-        <span class="btn-icon">📈</span>
-        <span class="btn-text">Form</span>
-      </button>
-      
-      <button class="active" data-view="table" onclick="toggleView('table')">
-        <span class="btn-icon">📊</span>
-        <span class="btn-text">Table</span>
-      </button>
-      
-      <button data-view="records" onclick="toggleView('records')">
-        <span class="btn-icon">🏆</span>
-        <span class="btn-text">Records</span>
-      </button>
-    </div>
     
     
     
@@ -98,41 +61,19 @@
   
   <!-- fixture page Head -->
   <div id="fixturePageHead" style="display:none">
+    <button class="shareBtn" onclick="shareFixtures()">
+      <span class="btn-icon">📷</span>
+      <span class="btn-text">Share</span>
+    </button>
+    
     <div class="searchbar-fixtures">
       
       <input type="text" id="fixtureSearchInput" placeholder="Search team..." oninput="renderFixtures()" />
+      <button class="menu-btn" onclick="setPageAndToggleMenu('fixture')">
+        ☰
+      </button>
     </div>
-    <div class="btn-tablePage">
-      
-      <button class="btn-create" onclick="handleGenerateFixtures()">
-        <span class="btn-icon">
-          ⚽ </span>
-        <span class="btn-text">Create</span>
-      </button>
-      
-      <button onclick="prevRound()">
-        <span class="btn-icon">❮</span>
-        <span class="btn-text">Prev</span>
-      </button>
-      
-      <button onclick="nextRound()">
-        <span class="btn-icon">❯</span>
-        <span class="btn-text">Next</span>
-      </button>
-      
-      <button class="btn-secondary" onclick="openDateResetModal()">
-        <span class="btn-icon">✏️</span>
-        <span class="btn-text">Edit Date</span>
-      </button>
-      
-      <button onclick="shareFixtures()">
-        <span class="btn-icon">📷</span>
-        <span class="btn-text">Share</span>
-      </button>
-      
-      
-    </div>
-    
+    <div id="roundCarousel"></div>
   </div>
   
   
@@ -191,27 +132,18 @@
     <div class="bracketControls" id="bracketControl" style="display:none">
       <div class="bracketTopActions">
         
-        <button class="zoomout bracket-tab active" onclick="toggleBracketMode('fixtures')">
+        <button onclick="toggleBracketMode('fixtures')">
           <span class="btn-icon">📋</span>
           <span class="btn-text">Knockout Matches</span>
         </button>
         
-        <button class="zoomout bracket-tab" onclick="toggleBracketMode('bracket')">
+        <button onclick="toggleBracketMode('bracket')">
           <span class="btn-icon">🔀</span>
           <span class="btn-text">Full Bracket</span>
         </button>
         
       </div>
       
-      <button class="zoomout" onclick="zoomOutBracket()">
-        <span class="btn-icon">-</span>
-        <span class="btn-text">Zoom Out</span>
-      </button>
-      
-      <button class="zoomin" onclick="zoomInBracket()">
-        <span class="btn-icon">+</span>
-        <span class="btn-text">Zoom In</span>
-      </button>
       
       <button class="btn-create" onclick="shareKnockoutFixtures()">
         <span class="btn-icon">📷</span>
@@ -293,41 +225,47 @@
         </div>
       </div>
       
-      <div id="tournamentView">
-        <div class="tourListWrap">
-          <div id="tournamentList"></div>
+      <div class="view-container">
+        <div class="view-slider" id="viewSlider">
+          
+          <div class="view-page" id="tournamentView">
+            <div class="tourListWrap">
+              <div id="tournamentList"></div>
+            </div>
+          </div>
+          
+          <div class="view-page" id="potsView">
+            <section id="playerOfSeason">
+              
+              <div class="pos-table-container">
+                
+                <div class="POTStable-wrapper">
+                  <table id="posTable">
+                    <thead>
+                      <tr>
+                        <th>Rank</th>
+                        <th>Name</th>
+                        <th>League</th>
+                        <th>UCL</th>
+                        <th>UEL</th>
+                        <th>L/Cup</th>
+                        <th>SuperCup</th>
+                        <th>GPGx10</th>
+                        <th>T/Scorer</th>
+                        <th>Defense</th>
+                        <th>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+          </div>
+          
         </div>
       </div>
       
-      <div id="potsView" style="display:none;">
-        <section id="playerOfSeason">
-          
-          
-          
-          <!-- Table -->
-          <div class="pos-table-container">
-            <table id="posTable">
-              <thead>
-                <tr>
-                  <th>Rank</th>
-                  <th>Name</th>
-                  <th>League</th>
-                  <th>UCL</th>
-                  <th>UEL</th>
-                  <th>L/Cup</th>
-                  <th>SuperCup</th>
-                  <th>GPGx10</th>
-                  <th>T/Scorer</th>
-                  <th>Defense</th>
-                  <th>Total</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-          
-        </section>
-      </div>
     </section>
     
     
@@ -521,6 +459,11 @@
         </div>
         
         <div id="formView" style="display:none">
+          <div class="form-text">
+            <span> Recent Forms </span>
+            <button onclick="shareForm()">📤 Share Form</button>
+            <span> Last 5</span></p>
+          </div>
           <div id="formContainer"></div>
         </div>
         
@@ -559,11 +502,11 @@
       <section class="page" id="fixturePage" style="display:none;">
         
         <div class="content">
-          <div id="fixtureScreenshotArea" style="background: #0d1117; padding: 10px; border-radius: 8px;">
+          
+          <div id="fixtureScreenshotArea">
             
             
-            <h2 id="roundLabel">Fixtures
-            </h2>
+            
             
             
             <div id="fixtureList"></div>
@@ -629,9 +572,9 @@
       
       
       <div class="btn-cupPage">
-        <button class="btn-add" onclick="toggleCupSetUpView()">
+        <button onclick="toggleCupSetUpView()">
           <span class="btn-icon">👥</span>
-          <span id="cupToggleText" class="btn-text">Teams</span>
+          <span id="cupToggleText" class="btn-text">See Teams</span>
         </button>
         
         <button class="badge-info">
@@ -860,7 +803,21 @@
   
   
   
-  
+  <div class="custom-dropdown" id="customDropdown" style="display:none">
+    <button class="dropdown-toggle" onclick="toggleDropdown()">
+      📊 Table </button>
+    
+    <div id="dropdownMenu" class="dropdown-menu">
+      <div onclick="handleMenuClick('table')">📊 Table</div>
+      <div onclick="handleMenuClick('fullview')">🖥️ Full Table View</div>
+      <div onclick="handleMenuClick('share')">📷 Share Table
+      </div>
+      
+      <div onclick="handleMenuClick('team')">👥 Registered Teams</div>
+      <div onclick="handleMenuClick('form')">📈 Form</div>
+      <div onclick="handleMenuClick('records')">🏆 Records</div>
+    </div>
+  </div>
   
   
   <div id="alertModal" class="modal-overlay" style="display:none;">

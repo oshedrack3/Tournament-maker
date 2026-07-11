@@ -9,6 +9,7 @@ const PAGES = [
   "fixturePageHead",
   "nav",
   "cupHome",
+  "customDropdown",
   "cupTab",
   "teamView"
   
@@ -307,8 +308,14 @@ function openLeagueRecorder(match) {
   
   activeInput = "homeGoals";
   
-  document.getElementById("homeGoals").classList.add("active");
-  document.getElementById("awayGoals").classList.remove("active");
+  const homeInput = document.getElementById("homeGoals");
+  const awayInput = document.getElementById("awayGoals");
+  
+  homeInput.classList.add("active");
+  awayInput.classList.remove("active");
+  
+  homeInput.focus(); // <-- this is the key. Auto-focus so numpad works immediately
+  homeInput.setSelectionRange(homeInput.value.length, homeInput.value.length);
   
   document.getElementById("numpad").classList.remove("hidden");
 }
@@ -365,15 +372,19 @@ function toggleView(view) {
   
   if (view === "table") {
     activeView = tableView;
+    updateDropdownLabel("table")
   } else if (view === "form") {
     activeView = formView;
     renderFormView();
+    updateDropdownLabel("forms")
   } else if (view === "records") {
     activeView = recordsView;
     renderRecords();
+    updateDropdownLabel("records")
   } else if (view === "team") {
     activeView = teamView;
     renderTeams();
+    updateDropdownLabel("teams")
   }
   
   if (!activeView) return;
@@ -447,7 +458,8 @@ function handleMenuAction(action) {
     sharePOTS: sharePOTS,
     openPOTS: openPOTSSetup,
     shareGroupTable: shareCupTable,
-    
+    createFixture: handleGenerateFixtures,
+    dateEdit: openDateResetModal,
     deleteCupTeam: deleteCupTeamInfo
     
     
@@ -473,6 +485,11 @@ const menuConfig = {
     { label: "Import Teams", action: "importTeams" },
     { label: "Edit or Delete Team", action: "deleteTeam" }
   ],
+  fixture: [
+    { label: "Generate New Fixture", action: "createFixture" },
+    { label: "Change Played Match Date", action: "dateEdit" }
+  ],
+  
   tournaments: [
     { label: "Open Tournament", action: "openTournament" },
     { label: "Create New Tournament", action: "createTournament" },

@@ -13,17 +13,22 @@ async function renderFixtures() {
     ?.value
     ?.toLowerCase() || "";
   
+  const roundCarousel = document.getElementById("roundCarousel");
+  
+  if (roundCarousel) {
+    if (searchQuery) {
+      roundCarousel.style.display = "none";
+    } else {
+      roundCarousel.style.display = "";
+    }
+  }
+  
   const currentRound = getCurrentRound();
   const maxRound = Math.max(
     ...tournament.matches.map(m => m.round || 1),
     1
   );
   
-  const roundLabel = document.getElementById("roundLabel");
-  if (roundLabel) {
-    roundLabel.innerText =
-      (!searchQuery && maxRound !== 1) ? `Round ${currentRound}/${maxRound}` : "";
-  }
   
   let roundMatches = tournament.matches;
   
@@ -166,6 +171,7 @@ ${formatMatchDay(match.scheduledAt)}
     
     container.appendChild(div);
   });
+  renderRoundList();
 }
 
 
@@ -198,70 +204,7 @@ function formatRecordedTime(value) {
   return `${day} ${month}, ${year}`;
 }
 
-function nextRound() {
-  console.log("[nextRound] Called");
-  
-  const tournament = getCurrentTournament();
-  console.log("[nextRound] Current tournament:", tournament);
-  
-  if (!tournament) {
-    console.error("[nextRound] No tournament loaded.");
-    return;
-  }
-  
-  if (!tournament.matches || !tournament.matches.length) {
-    console.error("[nextRound] Tournament has no matches:", tournament);
-    return;
-  }
-  
-  const rounds = tournament.matches.map(m => m.round || 1);
-  const maxRound = Math.max(...rounds);
-  let currentRound = tournament.currentRound || 1;
-  
-  console.log(`[nextRound] currentRound=${currentRound}, maxRound=${maxRound}`);
-  
-  if (currentRound < maxRound) {
-    tournament.currentRound = currentRound + 1;
-    console.log("[nextRound] Setting round to:", tournament.currentRound);
-    
-    updateTournament(tournament);
-    renderFixtures();
-    console.log("[nextRound] Done");
-  } else {
-    console.log("[nextRound] Already at max round");
-  }
-}
 
-function prevRound() {
-  console.log("[prevRound] Called");
-  
-  const tournament = getCurrentTournament();
-  console.log("[prevRound] Current tournament:", tournament);
-  
-  if (!tournament) {
-    console.error("[prevRound] No tournament loaded.");
-    return;
-  }
-  
-  if (!tournament.matches || !tournament.matches.length) {
-    console.error("[prevRound] Tournament has no matches.");
-    return;
-  }
-  
-  let currentRound = tournament.currentRound || 1;
-  console.log(`[prevRound] currentRound=${currentRound}`);
-  
-  if (currentRound > 1) {
-    tournament.currentRound = currentRound - 1;
-    console.log("[prevRound] Setting round to:", tournament.currentRound);
-    
-    updateTournament(tournament);
-    renderFixtures();
-    console.log("[prevRound] Done");
-  } else {
-    console.log("[prevRound] Already at round 1");
-  }
-}
 
 function getCurrentRound() {
   const tournament = getCurrentTournament();
@@ -275,6 +218,26 @@ function setCurrentRound(round) {
   updateTournament(tournament);
 }
 
+function nextRound() {
+  const current = getCurrentRound();
+  const max = getMaxRound();
+  
+  if (current < max) {
+    setCurrentRound(current + 1);
+    
+    renderFixtures();
+  }
+}
+
+function prevRound() {
+  const current = getCurrentRound();
+  
+  if (current > 1) {
+    setCurrentRound(current - 1);
+    
+    renderFixtures();
+  }
+}
 
 
 
@@ -330,7 +293,6 @@ function shareFixtures() {
   }
   
   const options = {
-    backgroundColor: '#0d1117',
     useCORS: true,
     allowTaint: true,
     logging: false,
@@ -451,8 +413,8 @@ function goToTournamentPage() {
 function goToListOfTournamentPage() {
   hideAllPages();
   
-  document.getElementById("listOfTournamentPage").style.display = "block";
-  document.getElementById("tourListPageHead").style.display = "block";
+  document.getElementById("listOfTournamentPage").style.display = "flex";
+  document.getElementById("tourListPageHead").style.display = "flex";
 }
 
 
@@ -473,14 +435,11 @@ function goToTablePage() {
   
   document.getElementById("tableView").style.display = "block";
   document.getElementById("formView").style.display = "none";
+  document.getElementById("customDropdown").style.display = "block";
   
-  document.getElementById("formToggleBtn").innerHTML = `
-  <span class="btn-icon">📈</span>
-  <span class="btn-text">Form</span>
-`;
+  
   
   rebuildTableFromMatches();
-  
   const tournament = getCurrentTournament();
   if (tournament) {
     renderTable(getSortedTable(tournament.table || []));
@@ -630,35 +589,6 @@ function resetLogoUI() {
 }
 
 
-function getTeamForm(teamName, limit = 5) {
-  const tournament = getCurrentTournament();
-  if (!tournament?.matches) return [];
-  
-  const playedMatches = tournament.matches
-    .filter(match =>
-      match.played &&
-      (match.home === teamName || match.away === teamName)
-    );
-  
-  return playedMatches
-    .slice(-limit)
-    .reverse()
-    .map(match => {
-      const isHome = match.home === teamName;
-      
-      const goalsFor = isHome ?
-        match.homeGoals :
-        match.awayGoals;
-      
-      const goalsAgainst = isHome ?
-        match.awayGoals :
-        match.homeGoals;
-      
-      if (goalsFor > goalsAgainst) return "W";
-      if (goalsFor < goalsAgainst) return "L";
-      return "D";
-    });
-}
 
 
 function getTeamForm(teamName) {
@@ -678,9 +608,9 @@ function getTeamForm(teamName) {
     const goalsFor = isHome ? m.homeGoals : m.awayGoals;
     const goalsAgainst = isHome ? m.awayGoals : m.homeGoals;
     
-    if (goalsFor > goalsAgainst) return 'W';
-    if (goalsFor < goalsAgainst) return 'L';
-    return 'D';
+    if (goalsFor > goalsAgainst) return '✓';
+    if (goalsFor < goalsAgainst) return '✕';
+    return '–';
   });
 }
 
@@ -732,7 +662,7 @@ function renderFormView() {
         const placeholder = teamSide?.querySelector(".team-logo-placeholder");
         if (base64Logo && teamSide && placeholder) {
           const img = document.createElement("img");
-          img.className = "team-logo";
+          img.className = "Form-team-logo";
           img.src = base64Logo;
           teamSide.replaceChild(img, placeholder);
         }

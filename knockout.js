@@ -624,9 +624,9 @@ function renderFullBracket() {
   bracketContainer.innerHTML = "";
   
   const getTeamName = (team) => {
-    if (!team || team === "BYE") return "Awaiting Winner";
+    if (!team || team === "BYE") return "TBD";
     if (typeof team === "string") return team;
-    return team.name || "Awaiting Winner";
+    return team.name || "TBD";
   };
   
   let currentRoundSize = knockoutSize;
@@ -663,8 +663,8 @@ function renderFullBracket() {
       
       const isPending = !match ||
         !match.played ||
-        homeName === "Awaiting Winner" ||
-        awayName === "Awaiting Winner";
+        homeName === "TBD" ||
+        awayName === "TBD";
       
       const card = document.createElement("div");
       card.className = "match-card";
@@ -1260,7 +1260,7 @@ function toggleCupSetUpView() {
     setup.style.display = "flex";
     teams.style.display = "none";
     
-    text.textContent = "Teams";
+    text.textContent = "See Teams";
   }
 }
 
@@ -1454,7 +1454,7 @@ function detectChampion(tournament) {
     
     console.log("🏆 CHAMPION DETECTED:", championName);
     
-    // Pass name + logo key so animation doesn't have to re-resolve it
+  
     showChampionAnimation(championName, logoKey);
   }
   
@@ -1583,80 +1583,6 @@ if (viewport) {
 }
 
 
-function shareBracket() {
-  const element = document.getElementById('bracket-container');
-  const titleText = document.getElementById('roundLabel')?.textContent || 'Bracket';
-  const fileName = titleText.replace(/\s/g, '-');
-  
-  if (!element) {
-    showAlert('Bracket container not found!');
-    return;
-  }
-  
-  const options = {
-    backgroundColor: '#0d1117',
-    useCORS: true,
-    allowTaint: true,
-    logging: false,
-    imageTimeout: 0,
-    scale: Math.min(4, window.devicePixelRatio * 2),
-    width: element.scrollWidth,
-    height: element.scrollHeight,
-    scrollX: 0,
-    scrollY: 0,
-    
-    onclone: (doc) => {
-      const cloned = doc.getElementById('bracket-container');
-      if (cloned) {
-        cloned.style.background = '#0d1117';
-        cloned.style.overflow = 'visible';
-        cloned.style.height = 'auto';
-        cloned.style.width = 'fit-content';
-        
-        const champion = cloned.querySelector('.champion-box-container');
-        if (champion) {
-          champion.style.display = 'block';
-          champion.style.marginTop = '20px';
-        }
-        
-        cloned.querySelectorAll('*').forEach(el => {
-          el.style.webkitFontSmoothing = 'antialiased';
-          el.style.textRendering = 'geometricPrecision';
-        });
-      }
-    }
-  };
-  
-  html2canvas(element, options).then(canvas => {
-    canvas.toBlob(blob => {
-      if (!blob) {
-        show('Failed to process screenshot image.');
-        return;
-      }
-      
-      const file = new File(
-        [blob],
-        `bracket-${fileName}.png`, { type: 'image/png' }
-      );
-      
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        navigator.share({
-          files: [file],
-          title: titleText,
-          text: `Check out the latest ${titleText}!`
-        }).catch(err => console.log('Share dismissed', err));
-      } else {
-        const link = document.createElement('a');
-        link.download = `bracket-${fileName}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-      }
-    }, 'image/png');
-  }).catch(err => {
-    console.error(err);
-    showAlert('Could not take screenshot');
-  });
-}
 
 function generateDirectKnockOut(tournament) {
   if (!tournament) return;
@@ -1693,7 +1619,7 @@ function generateDirectKnockOut(tournament) {
     });
   }
   
-  // Rounds 2+
+  
   for (let round = 2; round <= totalRounds; round++) {
     const matchesInRound = Math.pow(2, totalRounds - round);
     for (let slot = 0; slot < matchesInRound; slot++) {
@@ -1701,8 +1627,8 @@ function generateDirectKnockOut(tournament) {
         id: `KO_R${round}_M${slot}`,
         roundIndex: round,
         slot,
-        home: { id: null, name: "Awaiting Winner", isPlaceholder: true },
-        away: { id: null, name: "Awaiting Winner", isPlaceholder: true },
+        home: { id: null, name: "TBD", isPlaceholder: true },
+        away: { id: null, name: "TBD", isPlaceholder: true },
         homeGoals: null,
         awayGoals: null,
         played: false,
