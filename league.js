@@ -415,6 +415,8 @@ function goToListOfTournamentPage() {
   
   document.getElementById("listOfTournamentPage").style.display = "flex";
   document.getElementById("tourListPageHead").style.display = "flex";
+   currentSwapView = 0; 
+   updateSwapView();
 }
 
 
