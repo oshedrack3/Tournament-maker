@@ -282,11 +282,13 @@ function toggleScreenshotMode() {
 
 function shareFixtures() {
   const element = document.getElementById('fixtureScreenshotArea');
-  const roundLabelEl = document.getElementById('roundLabel');
-  
-  const titleText = roundLabelEl ? roundLabelEl.textContent : 'Fixtures';
-  const roundText = titleText.replace(/\s/g, '-');
-  
+
+  const track = document.querySelector('#roundCarousel .roundTrack');
+const activeRoundEl = track?.querySelector('.roundText.active');
+
+let titleText = activeRoundEl ? activeRoundEl.textContent.trim() : 'Fixtures';
+const roundText = titleText.replace(/\s+/g, '-');
+
   if (!element) {
     showAlert('Screenshot target area not found!');
     return;
@@ -1451,6 +1453,7 @@ function editTournament(tournamentId) {
     renderTournamentList();
   });
 }
+
 
 
 async function saveInlineEdit(e) {

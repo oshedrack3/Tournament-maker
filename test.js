@@ -1720,7 +1720,6 @@ function rebuildTableFromMatches() {
     newRanks[team.name] = index;
   });
   
-  tournament.prevRanks = newRanks;
   
   tournament.table = sortedTable;
   updateTournament(tournament);
@@ -1809,6 +1808,16 @@ function recordMatchResult(matchId, homeGoals, awayGoals) {
   const tournament = getCurrentTournament();
   if (!tournament) return;
   
+ 
+  const currentRanks = {};
+  if (Array.isArray(tournament.table)) {
+    tournament.table.forEach((team, index) => {
+      currentRanks[team.name] = index;
+    });
+  }
+  
+  tournament.prevRanks = currentRanks;
+  
   const match = tournament.matches.find(m => String(m.id) === String(matchId));
   if (match) {
     match.played = true;
@@ -1817,9 +1826,10 @@ function recordMatchResult(matchId, homeGoals, awayGoals) {
   }
   
   updateTournament(tournament);
-  rebuildTableFromMatches(); // this now handles prevRanks internally
-}
+  
 
+  rebuildTableFromMatches();
+}
 
 
 
@@ -1828,7 +1838,7 @@ function toggleDropdown() {
 }
 
 function handleMenuClick(value) {
-  // actions
+  
   if (value === "fullview") toggleScreenshotMode();
   else if (value === "share") shareTable();
   else toggleView(value);
