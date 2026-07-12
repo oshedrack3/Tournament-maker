@@ -687,7 +687,9 @@ select:focus {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
-
+#tableView{
+  padding-top: 20px;
+}
 .POTStable-wrapper {
   width: 100%;
   overflow-x: auto;
@@ -4164,13 +4166,14 @@ select {
   min-width: 150px;
   z-index: 1000;
   border: solid 1px grey;
-  
+  z-index: 40;
 }
 
 .dropdown-menu div {
   padding: 10px;
   color: #222;
   cursor: pointer;
+  z-index: 35;
 }
 
 .dropdown-menu div:hover {
