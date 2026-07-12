@@ -1631,15 +1631,9 @@ function rebuildTableFromMatches() {
   const tournament = getCurrentTournament();
   if (!tournament) return;
   
-  if (!tournament.prevRanks && Array.isArray(tournament.table) && tournament.table.length > 0) {
-    const initialRanks = {};
-    tournament.table.forEach((team, index) => {
-      initialRanks[team.name] = index;
-    });
-    tournament.prevRanks = initialRanks;
-  }
-  
+
   const prevRanks = tournament.prevRanks || {};
+  
   const table = {};
   
   tournament.teams.forEach(team => {
@@ -1696,27 +1690,37 @@ function rebuildTableFromMatches() {
     team.gd = team.gf - team.ga;
   });
   
+  
   const sortedTable = Object.values(table).sort((a, b) => {
     if (b.pts !== a.pts) return b.pts - a.pts;
     if (b.gd !== a.gd) return b.gd - a.gd;
     return b.gf - a.gf;
   });
   
+
   sortedTable.forEach((team, newIndex) => {
-    const prevIndex = prevRanks[team.name];
+    const oldIndex = prevRanks[team.name];
     
-    if (prevIndex !== undefined) {
-      if (newIndex < prevIndex) {
+    if (oldIndex !== undefined) {
+      if (newIndex < oldIndex) {
         team.change = 'up';
-      } else if (newIndex > prevIndex) {
+      } else if (newIndex > oldIndex) {
         team.change = 'down';
       } else {
         team.change = 'same';
       }
     } else {
-      team.change = 'same';
+      team.change = 'same'; 
     }
   });
+  
+
+  const newRanks = {};
+  sortedTable.forEach((team, index) => {
+    newRanks[team.name] = index;
+  });
+  
+  tournament.prevRanks = newRanks;
   
   tournament.table = sortedTable;
   updateTournament(tournament);
@@ -1725,7 +1729,6 @@ function rebuildTableFromMatches() {
     renderTable(tournament.table);
   }
 }
-
 
 function getChangeIndicator(change) {
   if (change === 'up') {
@@ -1806,14 +1809,6 @@ function recordMatchResult(matchId, homeGoals, awayGoals) {
   const tournament = getCurrentTournament();
   if (!tournament) return;
   
-  if (Array.isArray(tournament.table) && tournament.table.length > 0) {
-    const currentRanks = {};
-    tournament.table.forEach((team, index) => {
-      currentRanks[team.name] = index;
-    });
-    tournament.prevRanks = currentRanks;
-  }
-  
   const match = tournament.matches.find(m => String(m.id) === String(matchId));
   if (match) {
     match.played = true;
@@ -1822,8 +1817,9 @@ function recordMatchResult(matchId, homeGoals, awayGoals) {
   }
   
   updateTournament(tournament);
-  rebuildTableFromMatches();
+  rebuildTableFromMatches(); // this now handles prevRanks internally
 }
+
 
 
 
