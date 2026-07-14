@@ -460,7 +460,8 @@ function handleMenuAction(action) {
     shareGroupTable: shareCupTable,
     createFixture: handleGenerateFixtures,
     dateEdit: openDateResetModal,
-    deleteCupTeam: deleteCupTeamInfo
+    deleteCupTeam: deleteCupTeamInfo,
+    publishTour: publishTournament
     
     
   };
@@ -483,7 +484,9 @@ const menuConfig = {
   league: [
     { label: "Register New Teams", action: "addTeam" },
     { label: "Import Teams", action: "importTeams" },
-    { label: "Edit or Delete Team", action: "deleteTeam" }
+    { label: "Edit or Delete Team", action: "deleteTeam" },
+    { label: "Publish Tournament", action: "publishTour" }
+    
   ],
   fixture: [
     { label: "Generate New Fixture", action: "createFixture" },

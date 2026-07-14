@@ -2209,3 +2209,49 @@ function shareBracket() {
 
 
 document.addEventListener("DOMContentLoaded", enableSwipeForRounds);
+
+
+// RUN ON PAGE LOAD
+document.addEventListener('DOMContentLoaded', async () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const viewId = urlParams.get('view');
+  
+  if (viewId) {
+    // VIEWER MODE - load from cloud
+    await loadTournamentFromCloud(viewId);
+    // Auto refresh every 30 seconds
+    setInterval(() => loadTournamentFromCloud(viewId), 30000);
+  } else {
+   renderTournamentList();
+  }
+});
+
+async function loadTournamentFromCloud(id) {
+  try {
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${id}/latest`);
+    if (!res.ok) throw new Error("Tournament not found online");
+    const data = await res.json();
+    const cloudData = data.record;
+    
+    // Load tournament into memory
+    setCurrentTournamentId(cloudData.id);
+    
+    // Load logos into IndexedDB for this session
+    if (cloudData.logos) {
+      const dbReq = indexedDB.open("tourmakerDB", 1);
+      dbReq.onsuccess = (e) => {
+        const db = e.target.result;
+        const tx = db.transaction("logos", "readwrite");
+        const store = tx.objectStore("logos");
+        for (let team in cloudData.logos) {
+          store.put(cloudData.logos[team], cloudData.tournament.teamLogos[team]);
+        }
+      }
+    }
+    
+    openTournament(cloudData.id); // Reuse your existing function
+    console.log("✅ Loaded from cloud, version:", cloudData.version);
+  } catch (err) {
+    showAlert("Could not load tournament: " + err.message);
+  }
+}

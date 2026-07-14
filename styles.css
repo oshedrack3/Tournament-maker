@@ -2355,13 +2355,13 @@ team-logo-preview.show {
   right: -260px;
   
   width: 240px;
-  height: 100%;
+  height: fit-content;
   
   background: white;
   border-right: 1px solid rgba(88, 166, 255, 0.2);
   
   padding: 60px 12px 12px;
-  
+  border-bottom-left-radius: 20px ;
   display: flex;
   flex-direction: column;
   gap: 10px;
