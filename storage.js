@@ -151,14 +151,16 @@ function openTournament(id) {
 }
 
 
-
-
 async function publishTournament() {
   if (!await checkAdmin()) return;
   
   const t = getCurrentTournament();
   if (!t) return showAlert("No tournament loaded");
-  showActionModal("⏳ Publishing to cloud...", "loading");
+  
+  showActionModal("⏳ Publishing...", "loading");
+  
+  // Ensure ID exists
+  if (!t.id) t.id = Date.now().toString();
   
   // 1. Get logos from IndexedDB
   const logos = {};
@@ -170,7 +172,7 @@ async function publishTournament() {
     }
   }
   
-  // 2. Build payload
+  // 2. Build payload (same structure you were using)
   const payload = {
     id: t.id,
     name: t.name,
@@ -179,92 +181,88 @@ async function publishTournament() {
     logos: logos
   };
   
-  // 3. Call our secure Netlify Function
   try {
-    const res = await fetch('/.netlify/functions/publish-bin', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: t.id, payload: payload })
+    // 3. Send to YOUR backend
+    const res = await fetch("https://tour-backend-vohh.onrender.com/tournaments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
     });
     
-    const result = await res.json();
+    if (!res.ok) throw new Error("Failed to publish");
     
-    if (res.ok) {
-      const viewLink = `${window.location.origin}?view=${t.id}`;
-      showActionModal(`✅ Published!<br><br>Share this link:<br><input value="${viewLink}" readonly onclick="this.select()" style="width:100%">`, "publish");
-      navigator.clipboard.writeText(viewLink);
-      console.log("Published to JSONBin:", result);
-    } else {
-      throw new Error(result.error || "Unknown error");
-    }
+    const viewLink = `${window.location.origin}?view=${t.id}`;
+    
+    showActionModal(
+      `✅ Published!<br><br>Share this link:<br>
+      <input value="${viewLink}" readonly onclick="this.select()" style="width:100%">`,
+      "publish"
+    );
+    
+    navigator.clipboard.writeText(viewLink);
+    
+    console.log("✅ Published to backend:", payload);
+    
   } catch (err) {
     showAlert("Publish failed: " + err.message);
     console.error(err);
   }
 }
 
-// Helper to read logo from IndexedDB
-function getLogoFromIndexedDB(key) {
-  return new Promise((resolve) => {
-    const req = indexedDB.open("tourmakerDB", 1);
-    req.onsuccess = (e) => {
-      const db = e.target.result;
-      const tx = db.transaction("logos", "readonly");
-      const store = tx.objectStore("logos");
-      const getReq = store.get(key);
-      getReq.onsuccess = () => resolve(getReq.result);
-    };
-    req.onerror = () => resolve(null);
-  });
-}
-
-
 async function loadTournamentFromCloud(id) {
-  showActionModal("⏳ Loading tournament from cloud...", "loading"); // Show loader
+  showActionModal("⏳ Loading tournament...", "loading");
   
   try {
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${id}/latest`);
-    if (!res.ok) throw new Error(`Tournament not found. Code: ${res.status}`);
+    const res = await fetch(`https://tour-backend-vohh.onrender.com/tournaments/${id}`);
     
-    const data = await res.json();
-    const cloudData = data.record;
+    if (!res.ok) throw new Error(`Tournament not found (${res.status})`);
+    
+    const cloudData = await res.json();
     
     if (!cloudData || !cloudData.tournament) {
       throw new Error("Invalid tournament data");
     }
     
-    // 1. Load tournament into localStorage so rest of app works
+    // 1. Save into localStorage
     saveTournament(cloudData.tournament);
     setCurrentTournamentId(cloudData.id);
     
-    // 2. Load logos into IndexedDB for this session
+    // 2. Load logos into IndexedDB
     if (cloudData.logos && Object.keys(cloudData.logos).length > 0) {
       const dbReq = indexedDB.open("tourmakerDB", 1);
-      dbReq.onupgradeneeded = (e) => { // create store if doesn't exist
+      
+      dbReq.onupgradeneeded = (e) => {
         e.target.result.createObjectStore("logos");
       };
+      
       dbReq.onsuccess = (e) => {
         const db = e.target.result;
         const tx = db.transaction("logos", "readwrite");
         const store = tx.objectStore("logos");
+        
         for (let team in cloudData.logos) {
-          const logoKey = cloudData.tournament.teamLogos[team];
-          if (logoKey) store.put(cloudData.logos[team], logoKey);
+          const logoKey = cloudData.tournament.teamLogos?.[team];
+          if (logoKey) {
+            store.put(cloudData.logos[team], logoKey);
+          }
         }
-      }
+      };
     }
     
-    // 3. Open it using your existing function
+    // 3. Open tournament
     openTournament(cloudData.id);
-    document.getElementById("actionModal").style.display = "none"; // Hide loader
-    console.log("✅ Loaded from cloud, version:", cloudData.version);
+    
+    document.getElementById("actionModal").style.display = "none";
+    
+    console.log("✅ Loaded from backend, version:", cloudData.version);
     
   } catch (err) {
-    document.getElementById("actionModal").style.display = "none"; // Hide loader
+    document.getElementById("actionModal").style.display = "none";
     showAlert("Could not load tournament: " + err.message);
-    console.error("Cloud Load Error:", err);
+    console.error("Load Error:", err);
   }
 }
+
 
 
 
