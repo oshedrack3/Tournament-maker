@@ -162,27 +162,15 @@ async function publishTournament() {
   // Ensure ID exists
   if (!t.id) t.id = Date.now().toString();
   
-  // 1. Get logos from IndexedDB
-  const logos = {};
-  if (t.teamLogos) {
-    for (let team in t.teamLogos) {
-      const key = t.teamLogos[team];
-      const logo = await getLogoFromIndexedDB(key);
-      if (logo) logos[team] = logo;
-    }
-  }
-  
-  // 2. Build payload (same structure you were using)
+  // 🚫 REMOVE logos completely
   const payload = {
     id: t.id,
     name: t.name,
     version: Date.now(),
-    tournament: t,
-    logos: logos
+    tournament: t
   };
   
   try {
-    // 3. Send to YOUR backend
     const res = await fetch("https://tour-backend-vohh.onrender.com/tournaments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -201,13 +189,14 @@ async function publishTournament() {
     
     navigator.clipboard.writeText(viewLink);
     
-    console.log("✅ Published to backend:", payload);
+    console.log("✅ Published (TEXT ONLY):", payload);
     
   } catch (err) {
     showAlert("Publish failed: " + err.message);
     console.error(err);
   }
 }
+
 
 async function loadTournamentFromCloud(id) {
   showActionModal("⏳ Loading tournament...", "loading");
@@ -223,38 +212,18 @@ async function loadTournamentFromCloud(id) {
       throw new Error("Invalid tournament data");
     }
     
-    // 1. Save into localStorage
+    // ✅ Save tournament
     saveTournament(cloudData.tournament);
     setCurrentTournamentId(cloudData.id);
     
-    // 2. Load logos into IndexedDB
-    if (cloudData.logos && Object.keys(cloudData.logos).length > 0) {
-      const dbReq = indexedDB.open("tourmakerDB", 1);
-      
-      dbReq.onupgradeneeded = (e) => {
-        e.target.result.createObjectStore("logos");
-      };
-      
-      dbReq.onsuccess = (e) => {
-        const db = e.target.result;
-        const tx = db.transaction("logos", "readwrite");
-        const store = tx.objectStore("logos");
-        
-        for (let team in cloudData.logos) {
-          const logoKey = cloudData.tournament.teamLogos?.[team];
-          if (logoKey) {
-            store.put(cloudData.logos[team], logoKey);
-          }
-        }
-      };
-    }
+    // 🚫 SKIP logos entirely
+    // (no IndexedDB writes)
     
-    // 3. Open tournament
     openTournament(cloudData.id);
     
     document.getElementById("actionModal").style.display = "none";
     
-    console.log("✅ Loaded from backend, version:", cloudData.version);
+    console.log("✅ Loaded TEXT-ONLY tournament:", cloudData.version);
     
   } catch (err) {
     document.getElementById("actionModal").style.display = "none";
