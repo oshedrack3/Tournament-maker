@@ -248,6 +248,43 @@ async function publishTournament() {
 }
 
 
+function openPublicTournament(tournament) {
+  
+  const name = tournament.name;
+  const formatType = (tournament.format || "league").toLowerCase();
+  
+  // Hide admin controls
+  document.querySelectorAll(".admin-only").forEach(el => {
+    el.style.display = "none";
+  });
+  
+  
+  if (formatType === "league") {
+    
+    const el = document.getElementById("leagueName");
+    if (el) el.textContent = name;
+    
+    goToTournamentPage();
+    
+  } else {
+    
+    const el = document.getElementById("cupName");
+    if (el) el.textContent = name;
+    
+    goToCupPage();
+  }
+  
+  
+  
+  currentTournament = tournament;
+  
+  renderFixtures();
+  renderTable();
+  renderStats();
+  
+}
+
+
 async function loadTournamentFromCloud(id) {
   showActionModal("⏳ Loading tournament...", "loading");
   
@@ -316,9 +353,8 @@ async function loadTournamentFromCloud(id) {
     }
     
     
-    // Open tournament
-    openTournament(cloudData.id);
-    
+   
+    openPublicTournament(cloudData.tournament);
     
     // Hide loader
     document.getElementById("actionModal").style.display = "none";

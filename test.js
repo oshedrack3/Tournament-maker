@@ -2219,10 +2219,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   if (viewId) {
     // VIEW MODE (Public)
-    await loadTournamentFromBackend(viewId);
+    await loadTournamentFromCloud(viewId);
     
     // Auto refresh every 30 seconds
-    setInterval(() => loadTournamentFromBackend(viewId), 30000);
+    setInterval(() => loadTournamentFromCloud(viewId), 30000);
     
   } else {
     // ADMIN MODE
