@@ -279,8 +279,7 @@ function openPublicTournament(tournament) {
   currentTournament = tournament;
   
   renderFixtures();
-  renderTable();
-  renderStats();
+ 
   
 }
 
