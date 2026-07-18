@@ -151,6 +151,9 @@ function openTournament(id) {
 }
 
 
+
+
+
 async function publishTournament() {
   if (!await checkAdmin()) return;
   
@@ -162,41 +165,64 @@ async function publishTournament() {
   // Ensure ID exists
   if (!t.id) t.id = Date.now().toString();
   
-  // 🚫 REMOVE logos completely
+  // 1. Get logos from IndexedDB
+  const logos = {};
+  if (t.teamLogos) {
+    for (let team in t.teamLogos) {
+      const key = t.teamLogos[team];
+      const logo = await getLogoFromIndexedDB(key);
+      if (logo) logos[team] = logo;
+    }
+  }
+  
+  // 2. Build payload (same structure you were using)
   const payload = {
     id: t.id,
     name: t.name,
     version: Date.now(),
-    tournament: t
+    tournament: t,
+    logos: logos
   };
   
   try {
-    const res = await fetch("https://tour-backend-vohh.onrender.com/tournaments", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-    
-    if (!res.ok) throw new Error("Failed to publish");
-    
-    const viewLink = `${window.location.origin}?view=${t.id}`;
-    
-    showActionModal(
-      `✅ Published!<br><br>Share this link:<br>
-      <input value="${viewLink}" readonly onclick="this.select()" style="width:100%">`,
-      "publish"
+  const res = await fetch("https://tour-backend-vohh.onrender.com/tournaments", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+  
+  // Read the actual response from backend
+  const responseText = await res.text();
+  
+  if (!res.ok) {
+    throw new Error(
+      `Server returned ${res.status}: ${responseText}`
     );
-    
-    navigator.clipboard.writeText(viewLink);
-    
-    console.log("✅ Published (TEXT ONLY):", payload);
-    
-  } catch (err) {
-    showAlert("Publish failed: " + err.message);
-    console.error(err);
   }
+  
+  const result = responseText ? JSON.parse(responseText) : {};
+  
+  const viewLink = `${window.location.origin}?view=${t.id}`;
+  
+  showActionModal(
+    `✅ Published!<br><br>Share this link:<br>
+    <input value="${viewLink}" readonly onclick="this.select()" style="width:100%">`,
+    "publish"
+  );
+  
+  navigator.clipboard.writeText(viewLink);
+  
+  console.log("✅ Published result:", result);
+  console.log("Payload sent:", payload);
+  
+} catch (err) {
+  showAlert("Publish failed: " + err.message);
+  console.error("Publish Error:", err);
+  console.error("Payload:", payload);
 }
-
+}
 
 async function loadTournamentFromCloud(id) {
   showActionModal("⏳ Loading tournament...", "loading");
@@ -212,18 +238,38 @@ async function loadTournamentFromCloud(id) {
       throw new Error("Invalid tournament data");
     }
     
-    // ✅ Save tournament
+    // 1. Save into localStorage
     saveTournament(cloudData.tournament);
     setCurrentTournamentId(cloudData.id);
     
-    // 🚫 SKIP logos entirely
-    // (no IndexedDB writes)
+    // 2. Load logos into IndexedDB
+    if (cloudData.logos && Object.keys(cloudData.logos).length > 0) {
+      const dbReq = indexedDB.open("tourmakerDB", 1);
+      
+      dbReq.onupgradeneeded = (e) => {
+        e.target.result.createObjectStore("logos");
+      };
+      
+      dbReq.onsuccess = (e) => {
+        const db = e.target.result;
+        const tx = db.transaction("logos", "readwrite");
+        const store = tx.objectStore("logos");
+        
+        for (let team in cloudData.logos) {
+          const logoKey = cloudData.tournament.teamLogos?.[team];
+          if (logoKey) {
+            store.put(cloudData.logos[team], logoKey);
+          }
+        }
+      };
+    }
     
+    // 3. Open tournament
     openTournament(cloudData.id);
     
     document.getElementById("actionModal").style.display = "none";
     
-    console.log("✅ Loaded TEXT-ONLY tournament:", cloudData.version);
+    console.log("✅ Loaded from backend, version:", cloudData.version);
     
   } catch (err) {
     document.getElementById("actionModal").style.display = "none";
@@ -231,7 +277,4 @@ async function loadTournamentFromCloud(id) {
     console.error("Load Error:", err);
   }
 }
-
-
-
 
