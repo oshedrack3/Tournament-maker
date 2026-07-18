@@ -156,81 +156,109 @@ function openTournament(id) {
 
 async function publishTournament() {
   if (!await checkAdmin()) return;
-  
+
   const t = getCurrentTournament();
   if (!t) return showAlert("No tournament loaded");
-  
+
   showActionModal("⏳ Publishing...", "loading");
-  
+
   // Ensure ID exists
   if (!t.id) t.id = Date.now().toString();
-  
-  // 1. Get logos from IndexedDB
-  const logos = {};
-  if (t.teamLogos) {
-    for (let team in t.teamLogos) {
-      const key = t.teamLogos[team];
-      const logo = await getLogoFromIndexedDB(key);
-      if (logo) logos[team] = logo;
-    }
-  }
-  
-  // 2. Build payload (same structure you were using)
+
+  // Build tournament package
   const payload = {
     id: t.id,
     name: t.name,
     version: Date.now(),
-    tournament: t,
-    logos: logos
+    tournament: t
   };
-  
-  try {
-  const res = await fetch("https://tour-backend-vohh.onrender.com/tournaments", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  });
-  
-  // Read the actual response from backend
-  const responseText = await res.text();
-  
-  if (!res.ok) {
-    throw new Error(
-      `Server returned ${res.status}: ${responseText}`
-    );
-  }
-  
-  const result = responseText ? JSON.parse(responseText) : {};
-  
-  const viewLink = `${window.location.origin}?view=${t.id}`;
-  
-  showActionModal(
-    `✅ Published!<br><br>Share this link:<br>
-    <input value="${viewLink}" readonly onclick="this.select()" style="width:100%">`,
-    "publish"
+
+  // Check file size
+  const jsonString = JSON.stringify(payload);
+
+  console.log(
+    "📦 Tournament file size:",
+    (new Blob([jsonString]).size / 1024 / 1024).toFixed(2),
+    "MB"
   );
-  
-  navigator.clipboard.writeText(viewLink);
-  
-  console.log("✅ Published result:", result);
-  console.log("Payload sent:", payload);
-  
-} catch (err) {
-  showAlert("Publish failed: " + err.message);
-  console.error("Publish Error:", err);
-  console.error("Payload:", payload);
+
+  try {
+
+    // Convert JSON into file
+    const file = new Blob(
+      [jsonString],
+      { type: "application/json" }
+    );
+
+    const formData = new FormData();
+
+    formData.append(
+      "tournament",
+      file,
+      "tournament.json"
+    );
+
+
+    const res = await fetch(
+      "https://tour-backend-vohh.onrender.com/tournaments/upload",
+      {
+        method: "POST",
+        body: formData
+      }
+    );
+
+
+    const responseText = await res.text();
+
+    if (!res.ok) {
+      throw new Error(
+        `Server returned ${res.status}: ${responseText}`
+      );
+    }
+
+
+    const result = responseText
+      ? JSON.parse(responseText)
+      : {};
+
+
+    const viewLink = `${window.location.origin}?view=${t.id}`;
+
+
+    showActionModal(
+      `✅ Published!<br><br>Share this link:<br>
+      <input value="${viewLink}" readonly onclick="this.select()" style="width:100%">`,
+      "publish"
+    );
+
+
+    navigator.clipboard.writeText(viewLink);
+
+
+    console.log("✅ Published result:", result);
+
+
+  } catch (err) {
+
+    showAlert("Publish failed: " + err.message);
+
+    console.error("Publish Error:", err);
+
+  }
 }
-}
+
 
 async function loadTournamentFromCloud(id) {
   showActionModal("⏳ Loading tournament...", "loading");
   
   try {
-    const res = await fetch(`https://tour-backend-vohh.onrender.com/tournaments/${id}`);
+    const res = await fetch(
+      `https://tour-backend-vohh.onrender.com/tournaments/${id}`
+    );
     
-    if (!res.ok) throw new Error(`Tournament not found (${res.status})`);
+    if (!res.ok) {
+      throw new Error(`Tournament not found (${res.status})`);
+    }
     
     const cloudData = await res.json();
     
@@ -238,43 +266,84 @@ async function loadTournamentFromCloud(id) {
       throw new Error("Invalid tournament data");
     }
     
-    // 1. Save into localStorage
+    
+    // Save tournament locally
     saveTournament(cloudData.tournament);
+    
     setCurrentTournamentId(cloudData.id);
     
-    // 2. Load logos into IndexedDB
+    
+    // Load logos if available
     if (cloudData.logos && Object.keys(cloudData.logos).length > 0) {
+      
       const dbReq = indexedDB.open("tourmakerDB", 1);
       
       dbReq.onupgradeneeded = (e) => {
-        e.target.result.createObjectStore("logos");
+        const db = e.target.result;
+        
+        if (!db.objectStoreNames.contains("logos")) {
+          db.createObjectStore("logos");
+        }
       };
       
+      
       dbReq.onsuccess = (e) => {
+        
         const db = e.target.result;
-        const tx = db.transaction("logos", "readwrite");
+        
+        const tx = db.transaction(
+          "logos",
+          "readwrite"
+        );
+        
         const store = tx.objectStore("logos");
         
+        
         for (let team in cloudData.logos) {
-          const logoKey = cloudData.tournament.teamLogos?.[team];
+          
+          const logoKey =
+            cloudData.tournament.teamLogos?.[team];
+          
           if (logoKey) {
-            store.put(cloudData.logos[team], logoKey);
+            store.put(
+              cloudData.logos[team],
+              logoKey
+            );
           }
         }
+        
       };
     }
     
-    // 3. Open tournament
+    
+    // Open tournament
     openTournament(cloudData.id);
     
+    
+    // Hide loader
     document.getElementById("actionModal").style.display = "none";
     
-    console.log("✅ Loaded from backend, version:", cloudData.version);
+    
+    console.log(
+      "✅ Loaded from backend:",
+      cloudData.version
+    );
+    
     
   } catch (err) {
+    
+    // Hide loader
     document.getElementById("actionModal").style.display = "none";
-    showAlert("Could not load tournament: " + err.message);
-    console.error("Load Error:", err);
+    
+    
+    showAlert(
+      "Could not load tournament: " + err.message
+    );
+    
+    
+    console.error(
+      "Load Error:",
+      err
+    );
   }
 }
-
