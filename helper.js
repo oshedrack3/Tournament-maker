@@ -1318,3 +1318,52 @@ async function shareCupFixture() {
     }
   }
 }
+
+
+
+const adminTools = [
+  ".btn-back",
+  ".menu-btn",
+  ".shareBtn"
+];
+
+
+function hideAdminTools() {
+  adminTools.forEach(selector => {
+    document.querySelectorAll(selector).forEach(el => {
+      el.style.display = "none";
+    });
+  });
+}
+
+function showAdminTools() {
+  adminTools.forEach(selector => {
+    document.querySelectorAll(selector).forEach(el => {
+      el.style.display = "";
+    });
+  });
+}
+
+
+
+function setAppMode(mode) {
+  APP_MODE = mode;
+  
+  const root = document.body;
+  
+  if (mode === "view") {
+    root.classList.add("view-mode");
+    root.classList.remove("admin-mode");
+    
+    hideAdminTools();
+    
+  } else {
+    root.classList.add("admin-mode");
+    root.classList.remove("view-mode");
+    
+    showAdminTools();
+  }
+  
+  console.log("App mode:", mode);
+}
+

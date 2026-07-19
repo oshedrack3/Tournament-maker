@@ -1,3 +1,4 @@
+let APP_MODE = "admin";
 let currentTournament = null;
 
 async function renderFixtures() {
@@ -164,10 +165,12 @@ ${formatMatchDay(match.scheduledAt)}
     
     div.style.cursor = "pointer";
     div.addEventListener("click", () => {
-      if (typeof openLeagueRecorder === "function") {
-        openLeagueRecorder(match);
-      }
-    });
+  if (APP_MODE === "view") return;
+  
+  if (typeof openLeagueRecorder === "function") {
+    openLeagueRecorder(match);
+  }
+});
     
     container.appendChild(div);
   });

@@ -239,7 +239,7 @@ async function renderTeams(containerId = "teamList") {
     };
     
     div.addEventListener("touchstart", (e) => start(e.touches[0].clientX));
-    div.addEventListener("mousedown", (e) => start(e.clientX));
+   div.addEventListener("mousedown", (e) => start(e.clientX));
     
     div.addEventListener("touchmove", (e) => move(e.touches[0].clientX));
     div.addEventListener("mousemove", (e) => move(e.clientX));
@@ -2218,10 +2218,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   const viewId = urlParams.get('view');
   
   if (viewId) {
-    // VIEW MODE (Public)
+  
+      setAppMode("view");
     await loadTournamentFromCloud(viewId);
     
-    // Auto refresh every 30 seconds
+    
     setInterval(() => loadTournamentFromCloud(viewId), 30000);
     
   } else {

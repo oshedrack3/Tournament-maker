@@ -1,4 +1,4 @@
-const ADMIN_PASSWORD = "tour2026"; // change this
+const ADMIN_PASSWORD = "tour2026"
 
 async function checkAdmin() {
   const pass = prompt("Enter Admin Password to Publish:");
@@ -152,111 +152,142 @@ function openTournament(id) {
 
 
 
+async function collectMissingLogos(tournament) {
+  const logosToUpload = {};
+  
+  for (let team in tournament.teamLogos) {
+    const key = tournament.teamLogos[team];
+    
+    if (!key.startsWith("http")) {
+      const base64 = await getLogoFromIndexedDB(key);
+      if (base64) {
+        logosToUpload[team] = base64;
+      }
+    }
+  }
+  
+  return logosToUpload;
+}
 
 
 async function publishTournament() {
-  if (!await checkAdmin()) return;
-
+  if (window.isPublishing) return;
+  window.isPublishing = true;
+  
+  if (!await checkAdmin()) {
+    window.isPublishing = false;
+    return;
+  }
+  
   const t = getCurrentTournament();
-  if (!t) return showAlert("No tournament loaded");
-
-  showActionModal("⏳ Publishing...", "loading");
-
-  // Ensure ID exists
+  if (!t) {
+    window.isPublishing = false;
+    return showAlert("No tournament loaded");
+  }
+  
+  const isUpdate = !!t.published;
+  
+  showActionModal(
+    isUpdate ? "🔄 Updating..." : "⏳ Publishing...",
+    "loading"
+  );
+  
   if (!t.id) t.id = Date.now().toString();
-
-  // Build tournament package
+  
   const payload = {
     id: t.id,
     name: t.name,
     version: Date.now(),
+    mode: isUpdate ? "update" : "create",
     tournament: t
   };
-
-  // Check file size
+  
   const jsonString = JSON.stringify(payload);
-
-  console.log(
-    "📦 Tournament file size:",
-    (new Blob([jsonString]).size / 1024 / 1024).toFixed(2),
-    "MB"
-  );
-
+  const sizeMB = new Blob([jsonString]).size / 1024 / 1024;
+  
+  if (sizeMB > 5) {
+    window.isPublishing = false;
+    return showAlert("❌ Tournament too large. Reduce data.");
+  }
+  
   try {
-
-    // Convert JSON into file
-    const file = new Blob(
-      [jsonString],
-      { type: "application/json" }
-    );
-
+    const file = new Blob([jsonString], { type: "application/json" });
     const formData = new FormData();
-
-    formData.append(
-      "tournament",
-      file,
-      "tournament.json"
-    );
-
-
+    
+    formData.append("tournament", file, "tournament.json");
+    
+    const logos = await collectMissingLogos(t);
+    if (logos && logos.length) {
+      logos.forEach((logo, i) => {
+        formData.append(`logo_${i}`, logo.file || logo);
+      });
+    }
+    
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    
     const res = await fetch(
       "https://tour-backend-vohh.onrender.com/tournaments/upload",
       {
         method: "POST",
-        body: formData
+        body: formData,
+        signal: controller.signal,
+        headers: {
+          "x-admin-key": "YOUR_SECRET_KEY"
+        }
       }
     );
-
-
+    
+    clearTimeout(timeout);
+    
     const responseText = await res.text();
-
+    
     if (!res.ok) {
-      throw new Error(
-        `Server returned ${res.status}: ${responseText}`
-      );
+      throw new Error(`Server returned ${res.status}: ${responseText}`);
     }
-
-
-    const result = responseText
-      ? JSON.parse(responseText)
-      : {};
-
-
+    
+    let result = {};
+    try {
+      result = responseText ? JSON.parse(responseText) : {};
+    } catch {}
+    
+    // mark as published after success
+    t.published = true;
+    
     const viewLink = `${window.location.origin}?view=${t.id}`;
-
-
-    showActionModal(
-      `✅ Published!<br><br>Share this link:<br>
-      <input value="${viewLink}" readonly onclick="this.select()" style="width:100%">`,
+    
+    showAlert(
+      `✅ ${isUpdate ? "Updated" : "Published"}!<br><br>Share this link:<br>
+      <input id="shareLink" value="${viewLink}" readonly onclick="this.select()" style="width:100%">
+      <button onclick="copyLink()">Copy</button>`,
       "publish"
     );
-
-
-    navigator.clipboard.writeText(viewLink);
-
-
-    console.log("✅ Published result:", result);
-
-
+    
+    try {
+      await navigator.clipboard.writeText(viewLink);
+    } catch {}
+    
+    console.log(`✅ ${isUpdate ? "Updated" : "Published"} result:`, result);
+    
   } catch (err) {
-
-    showAlert("Publish failed: " + err.message);
-
+    showAlert((isUpdate ? "Update" : "Publish") + " failed: " + err.message);
     console.error("Publish Error:", err);
-
+  } finally {
+    window.isPublishing = false;
   }
 }
 
+function copyLink() {
+  const input = document.getElementById("shareLink");
+  input.select();
+  document.execCommand("copy");
+}
 
 function openPublicTournament(tournament) {
   
   const name = tournament.name;
   const formatType = (tournament.format || "league").toLowerCase();
   
-  // Hide admin controls
-  document.querySelectorAll(".admin-only").forEach(el => {
-    el.style.display = "none";
-  });
   
   
   if (formatType === "league") {
@@ -279,13 +310,13 @@ function openPublicTournament(tournament) {
   currentTournament = tournament;
   
   renderFixtures();
- 
+  
   
 }
 
 
 async function loadTournamentFromCloud(id) {
-  showActionModal("⏳ Loading tournament...", "loading");
+  showActionModal("⏳ Loading tournament...", "success");
   
   try {
     const res = await fetch(
@@ -303,13 +334,13 @@ async function loadTournamentFromCloud(id) {
     }
     
     
-    // Save tournament locally
+    
     saveTournament(cloudData.tournament);
     
     setCurrentTournamentId(cloudData.id);
     
     
-    // Load logos if available
+    
     if (cloudData.logos && Object.keys(cloudData.logos).length > 0) {
       
       const dbReq = indexedDB.open("tourmakerDB", 1);
@@ -352,11 +383,9 @@ async function loadTournamentFromCloud(id) {
     }
     
     
-   
+    
     openPublicTournament(cloudData.tournament);
     
-    // Hide loader
-    document.getElementById("actionModal").style.display = "none";
     
     
     console.log(
@@ -367,8 +396,8 @@ async function loadTournamentFromCloud(id) {
     
   } catch (err) {
     
-    // Hide loader
-    document.getElementById("actionModal").style.display = "none";
+    
+    
     
     
     showAlert(

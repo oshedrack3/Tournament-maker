@@ -4203,3 +4203,8 @@ select {
   width: 50%;
   flex: 0 0 50%;
 }
+
+
+.view-mode [data-admin] {
+  display: none !important;
+}
